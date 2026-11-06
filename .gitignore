@@ -1,0 +1,10 @@
+# Local configuration (may hold credentials)
+.env
+
+# Python (Copier and the template's own tests)
+__pycache__/
+.venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db

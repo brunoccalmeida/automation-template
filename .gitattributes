@@ -1,0 +1,4 @@
+# Git stores text files with LF and checks them out with LF on every OS, so
+# generated projects and template files look the same in any clone (Windows
+# included) and LF-only formatters (e.g. Prettier) pass after a fresh checkout.
+* text=auto eol=lf
