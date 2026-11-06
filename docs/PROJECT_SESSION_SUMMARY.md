@@ -8,8 +8,8 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item | Estado |
 | --- | --- |
-| Missão atual | 0 — Fundação (#1), concluída com o merge deste PR |
-| Próxima missão | 1 — Walking skeleton do template (#2) |
+| Situação | **Pausado em 06/11/2026** (ver [Pausa](#pausa)). Missão 0 (#1) concluída |
+| Próxima missão | 1 — Walking skeleton do template (#2), só quando o gatilho da pausa ocorrer |
 | PRs abertos | nenhum após o merge |
 | Portões | nenhum ainda: o CI do template nasce na Missão 1. Sem ruleset na `main` até lá |
 | Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos |
@@ -50,6 +50,23 @@ Princípio: cada peça entra na missão que a usa (YAGNI), e cada fase já nasce
 
 **Backlog nos repositórios de origem** (aberto com a confirmação do usuário): playwright-qa-starter-kit#15 e uat-automation-framework#134, ligados às Missões 8a (#10) e 8b (#11).
 
-## Próxima missão recomendada
+## Pausa
+
+**Decisão (06/11/2026):** o template fica pausado até o primeiro trabalho pago de automação.
+
+**Por quê:**
+
+- **Regra de três.** O template é extraído de dois projetos, e a regra "entra por evidência" pede três. O inventário já mostra divergências sem desempate (política de flaky, `.gitattributes`); o primeiro projeto de cliente é o terceiro caso que separa o que é comum de verdade do que é coincidência. Extrair antes é abstração prematura.
+- **Prioridade.** Portfólio e trabalho pago vêm antes: o cliente compra testes rodando no CI dele, não o fluxo de trabalho. O custo de não ter o template (portar melhorias à mão entre os repositórios) é baixo e linear; o template ainda tem 10 missões.
+
+**Consequências:**
+
+- Inverte a decisão anterior de só corrigir os projetos de origem depois do template: até a retomada, as melhorias entram neles à mão.
+- playwright-qa-starter-kit#15 e uat-automation-framework#134 ficam com a label `blocked`.
+- Nada se perde: ADRs, [INVENTORY.md](INVENTORY.md) e as issues #2 a #11 continuam válidos. Na retomada, revisar o inventário com o que o projeto do cliente mostrou ser repetível.
+
+**Gatilho para retomar:** o primeiro trabalho pago de automação concluído (ou um terceiro projeto que precise do mesmo harness).
+
+## Próxima missão recomendada (na retomada)
 
 **Missão 1 (#2), walking skeleton do template.** Instalar o Copier (`uv tool install copier` ou `pipx`; conferir a versão estável no PyPI), criar o `copier.yml` mínimo com uma pergunta e um arquivo renderizado, e um workflow que roda `copier copy` com respostas fixas e valida o projeto gerado. Ver o teste falhar antes (ex.: arquivo esperado ausente). Depois do CI verde: gate `ci-passed`, ruleset "Protect main" e skill `ship-pr`, como na Missão 1 do kit.
