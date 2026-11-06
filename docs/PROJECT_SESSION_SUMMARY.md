@@ -48,7 +48,7 @@ Princípio: cada peça entra na missão que a usa (YAGNI), e cada fase já nasce
 - Nenhum dos dois tem política de flaky, e eles divergem (retry no kit, sem retry no UAT); `.gitattributes` também diverge. Decidir na Missão 2a.
 - Este repositório tem a terceira cópia à mão do harness, só para trabalhar por missões até a Fase 2, que deve fazê-lo usar o próprio núcleo.
 
-**Pendente com o usuário:** abrir uma issue pública em cada repositório de origem apontando para as Missões 8a/8b (só com confirmação explícita).
+**Backlog nos repositórios de origem** (aberto com a confirmação do usuário): playwright-qa-starter-kit#15 e uat-automation-framework#134, ligados às Missões 8a (#10) e 8b (#11).
 
 ## Próxima missão recomendada
 
