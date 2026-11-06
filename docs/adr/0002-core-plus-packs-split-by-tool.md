@@ -16,7 +16,7 @@ Options considered:
 | Readability | Files full of `if web / if desktop` branches | Each template is simple | Each pack is simple and isolated |
 | Testing | Combinations explode | Simple, multiplied by the number of templates | CI renders one project per pack |
 
-Template platforms converge on C. Backstage calls such starting points *golden paths*, and generators such as Nx and Yeoman compose small generators instead of duplicating large ones: composition over duplication.
+Platform teams converge on C: Spotify calls such supported starting points *golden paths*, built on a shared base and served through Backstage templates ([How We Use Golden Paths to Solve Fragmentation in Our Software Ecosystem](https://engineering.atspotify.com/2020/08/how-we-use-golden-paths-to-solve-fragmentation-in-our-software-ecosystem)). The principle is composition over duplication.
 
 The shared part, the harness, is the most valuable part of the template. Option B makes sense when variants share almost nothing or are owned by different teams; neither holds here.
 

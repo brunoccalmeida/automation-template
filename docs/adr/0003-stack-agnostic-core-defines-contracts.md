@@ -26,10 +26,10 @@ Configuration follows factor III of the [Twelve-Factor App](https://12factor.net
 
 ## Alternatives
 
-- **A single task runner in every project** (`just`, `make`, Taskfile; GitHub's "Scripts to Rule Them All"): `just check` everywhere, whatever the language. Rejected for now: one more tool in every project, and `make` is awkward on Windows. Still available if the number of commands to standardise grows.
+- **A single task runner in every project** (`just`, `make`, Taskfile; GitHub's [Scripts to Rule Them All](https://github.com/github/scripts-to-rule-them-all)): `just check` everywhere, whatever the language. Rejected for now: one more tool in every project, and `make` is awkward on Windows. Still available if the number of commands to standardize grows.
 
 ## Consequences
 
 - The core cannot be read alone: the reader sees `{{ cmd_check }}` until a project is rendered. Generated projects, not the template, are what people read day to day.
 - A test in the template's CI fails when the core mentions a stack term (`npm`, `pytest`, `playwright`, `BASE_URL`, …), so the rule is enforced by a machine, not by attention (Mission 2b).
-- The smoke test of each pack proves reachability, not behaviour: it is a tracer bullet, expected to be replaced once the project's first real tests exist.
+- The smoke test of each pack proves reachability, not behavior: it is a tracer bullet, expected to be replaced once the project's first real tests exist.

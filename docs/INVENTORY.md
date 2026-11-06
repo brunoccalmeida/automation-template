@@ -59,7 +59,7 @@ Postura: com só dois projetos, **na dúvida, fica de fora** (regra de três). S
 
 | Peça | UAT | kit | Melhor | Cat. | Fase |
 | --- | --- | --- | --- | --- | --- |
-| `PROJECT_SESSION_SUMMARY.md` | 137 linhas; a tabela de estado **virou histórico**: células com até 1.231 caracteres | Curto, com tabela de estado e **plano de missões** | **kit** na forma; o problema do UAT justifica os ADRs (decisão duradoura sai do resumo) | N (modelo) | 2a |
+| `PROJECT_SESSION_SUMMARY.md` | 137 linhas; a tabela de estado **virou histórico**: células com mais de 1.200 caracteres | Curto, com tabela de estado e **plano de missões** | **kit** na forma; o problema do UAT justifica os ADRs (decisão duradoura sai do resumo) | N (modelo) | 2a |
 | ADRs | Não tem | Não tem | Lacuna (este repositório já usa: `docs/adr/`) | N (modelo) | 2a |
 | `KNOWN_ISSUES.md` | Não tem | `KI-n` com esperado/observado/impacto/teste, e o aviso "confirme que o teste falha pelo motivo do bug" | **kit** | N (modelo) | 2a |
 | Relatório de spike | Não tem | Achados do spike dentro do resumo | kit (conteúdo); falta modelo próprio | N (modelo) | 2a |
@@ -73,15 +73,15 @@ Postura: com só dois projetos, **na dúvida, fica de fora** (regra de três). S
 | --- | --- | --- | --- | --- | --- |
 | Gate `ci-passed` (único check obrigatório, `always()`, lista de permissão) | `check_needs.py` + `test_ci_gate.py` (Python) | Inline em `yq`/`jq`, e **confere que o gate depende de todo job** | **kit**: sem dependência de stack | N | 1 / 2b |
 | Actions fixadas por SHA | Sim, **cobrado** por `test_workflow_pinning.py` | Sim, mas nada cobra | **UAT** (cobrança); avaliar se o zizmor substitui o teste | N | 3 |
-| Endurecimento do workflow | `permissions: contents: read`; **sem** `concurrency`, `persist-credentials: false` e `timeout-minutes` | Os quatro | **kit** | N | 1 |
+| Endurecimento do workflow | `permissions: contents: read`; **sem** `concurrency` no nível do workflow (só no job de deploy do Pages), `persist-credentials: false` e `timeout-minutes` | Os quatro | **kit** | N | 1 |
 | Dependabot | Agrupado; ecossistema `docker-compose` | Agrupado + **`cooldown` de 7 dias** + `versioning-strategy` | **kit** (bloco `github-actions` no núcleo, bloco do ecossistema no pack) | N + P | 4 / 5 / 6 |
 | Sentinela de `ignore` do Dependabot | Não tem | `check-dependency-ignores.ts` reprova o `check` quando o ignore caduca | **kit** | Padrão N, implementação P | 5 |
 | Segunda fonte de vulnerabilidades, diária | `pip-audit --strict` (PR + diário) | **Não tem** | **UAT** | Padrão N, implementação P | 5 / 6 |
 | Hooks locais antes do commit | `pre-commit` (rodado também no CI) | Não tem | **UAT**, com ressalva: `rev: v5.0.0` por tag (contradiz a regra de SHA) e o repositório `pre-commit-hooks` repetido | P | 6 |
 | Checagem de encoding (UTF-8, sem NUL) | `check_text_encoding.py` (o `.gitignore` em UTF-16, gerado pelo PowerShell, não casava nada, #26) | Não tem | **UAT**; o problema é do Windows, não da stack | N | 3 |
-| Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Empate; o núcleo usa `main` | N | 4 |
-| Labels `priority: P0/P1/P2` | Iguais | Iguais | Empate | N | 4 |
-| Config do repositório (só squash, auto-merge, título/corpo do PR) | — | Configurado | kit | N | 4 |
+| Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Empate; o núcleo usa `main` | N | Este repo: 1 · projeto gerado: 4 |
+| Labels `priority: P0/P1/P2` | Iguais | Iguais | Empate | N | Este repo: 0 · projeto gerado: 4 |
+| Config do repositório (só squash, auto-merge, título/corpo do PR) | Auto-merge desligado | Configurado | kit | N | Este repo: 0 · projeto gerado: 4 |
 | Modelos de issue e PR | Não tem | Não tem | Lacuna | N | 4 |
 | `.gitattributes` | `* text=auto` (rejeitou `eol=lf`) | `* text=auto eol=lf` (Prettier exige LF) | Divergem (ver §8) | N | 2a |
 | Relatório publicado | Allure no Pages + Codecov via OIDC | Planejado (Missão 6 do kit) | UAT | P | 5 / 6 |
