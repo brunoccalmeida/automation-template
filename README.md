@@ -6,6 +6,11 @@ It is extracted from two existing projects, [uat-automation-framework](https://g
 
 > 🚧 Work in progress: the template is being built mission by mission.
 
+## Design
+
+- [Architecture Decision Records](docs/adr/): why Copier, why a core plus packs split by tool, and why the core only defines contracts that each pack implements.
+- [Inventory](docs/INVENTORY.md) (Portuguese): every piece of the two source projects, classified as core, pack or application-specific, with the better of the two implementations.
+
 ## License
 
 MIT, see [LICENSE](LICENSE).
