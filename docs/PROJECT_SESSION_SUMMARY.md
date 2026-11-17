@@ -2,18 +2,22 @@
 
 # Resumo das sessões
 
-Estado do projeto entre chats. Lido no início de cada missão (ver `.github/copilot-instructions.md`). Histórico detalhado mora no Git (PRs, commits, issues); decisões duradouras, em `docs/adr/`. Este arquivo guarda só o **estado** e a **próxima missão**.
+Estado do projeto entre chats. Lido no início de cada missão (ver `.github/copilot-instructions.md`). Histórico detalhado mora no Git: o registro de cada missão (decisões, fontes, como o RED foi visto, achados) vai no **corpo do PR**, que o squash grava na `main`; decisões duradouras, em `docs/adr/`. Este arquivo guarda só o **estado** e a **próxima missão** ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md), item 8). A seção "Missão 0" abaixo é anterior a essa regra e fica como histórico.
 
 ## Estado atual
 
 | Item | Estado |
 | --- | --- |
-| Situação | **Pausado em 06/11/2026** (ver [Pausa](#pausa)). Missão 0 (#1) concluída |
-| Próxima missão | 1 — Walking skeleton do template (#2), só quando o gatilho da pausa ocorrer |
+| Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). Missões 0 (#1) e A (#14) concluídas |
+| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer`. Contrato dos projetos (tabela de contratos, configuração do repositório, `REVIEW.md`) no README do plugin |
+| Próxima missão | B — piloto do plugin no playwright-qa-starter-kit (#15) |
+| Fila | C — UAT e nextjs (#16) · D — este repositório usa o próprio plugin (#17) · Copier: #2 a #11, pausados |
 | PRs abertos | nenhum após o merge |
-| Portões | nenhum ainda: o CI do template nasce na Missão 1. Sem ruleset na `main` até lá |
-| Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos |
-| Evidência | [INVENTORY.md](INVENTORY.md): cada peça dos dois projetos de origem classificada (núcleo / pack / app), com o melhor lado e a fase |
+| Portões | CI `validate-plugins`: valida o marketplace e cada plugin; reprova qualquer erro ou *warning*, menos o `version` omitido de propósito. **Ainda não é obrigatório**: a `main` não tem ruleset (previsto na Missão 1, #2) |
+| Ferramenta de CI | Claude Code CLI 2.1.326 fixado com lockfile em `.github/tools/claude-cli/`; subir de versão exige aprovar de novo o `postinstall` (`allowScripts` preso à versão) |
+| Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos · [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) retomada parcial com plugin |
+| Evidência | [INVENTORY.md](INVENTORY.md): peças dos projetos de origem classificadas (núcleo / pack / app); nextjs como terceira fonte e a comparação das quatro versões das peças do plugin |
+| Armadilhas | Este repositório ainda roda as cópias à mão de `close-mission` e `reviewer` em `.claude/` até a Missão D. O UAT grava o squash com `COMMIT_MESSAGES`, então o registro no corpo do PR não chega ao Git lá (Missão C) |
 
 ## Plano de missões
 
@@ -30,6 +34,12 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 | 7. Release | 7 | #9 | v1.0 | Tag, README de portfólio com diagrama e "como usar", Scorecard |
 | 8. Backlog | 8a | #10 | Adotar no kit | `copier` no playwright-qa-starter-kit + correções que o template não cobre |
 | | 8b | #11 | Adotar no UAT | O mesmo no uat-automation-framework; prova o `copier update` em projeto real |
+| Plugin | A | #14 | Plugin do harness | Marketplace + plugin `mission`, contrato dos projetos, portão de validação no CI (concluída) |
+| | B | #15 | Piloto no kit | Tabela de contratos, `REVIEW.md`, plugin no escopo do projeto, uma missão real de ponta a ponta |
+| | C | #16 | UAT e nextjs | O mesmo nos outros dois; squash do UAT com a descrição do PR |
+| | D | #17 | Dogfooding | Este repositório usa o próprio plugin |
+
+A Missão 2b (#4) encolhe: as skills e o revisor já vivem no plugin; o Copier passa a renderizar só a tabela de contratos e o registro do marketplace ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md), consequências).
 
 Princípio: cada peça entra na missão que a usa (YAGNI), e cada fase já nasce testada pelo CI da Fase 1.
 
@@ -67,6 +77,8 @@ Princípio: cada peça entra na missão que a usa (YAGNI), e cada fase já nasce
 
 **Gatilho para retomar:** o primeiro trabalho pago de automação concluído (ou um terceiro projeto que precise do mesmo harness).
 
-## Próxima missão recomendada (na retomada)
+**17/11/2026:** o segundo gatilho disparou (playwright-nextjs-e2e-ci). Retomado só o plugin ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)); o Copier segue pausado pelos mesmos motivos.
 
-**Missão 1 (#2), walking skeleton do template.** Instalar o Copier (`uv tool install copier` ou `pipx`; conferir a versão estável no PyPI), criar o `copier.yml` mínimo com uma pergunta e um arquivo renderizado, e um workflow que roda `copier copy` com respostas fixas e valida o projeto gerado. Ver o teste falhar antes (ex.: arquivo esperado ausente). Depois do CI verde: gate `ci-passed`, ruleset "Protect main" e skill `ship-pr`, como na Missão 1 do kit.
+## Próxima missão recomendada
+
+**Missão B (#15), piloto do plugin no playwright-qa-starter-kit.** Seguir o [README do plugin](../plugins/mission/README.md): declarar a tabela de contratos nas regras do kit, criar o `REVIEW.md` com os itens de Playwright e de ambiente compartilhado, adicionar o marketplace e instalar o plugin com `--scope project`, remover as cópias locais e fechar uma missão real com `/mission:close-mission` e `/mission:ship-pr`. O que o piloto revelar volta como correção para este repositório antes da Missão C.

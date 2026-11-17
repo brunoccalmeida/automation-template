@@ -1,6 +1,6 @@
 # 1. Distribute the template with Copier
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0004](0004-partial-resumption-with-a-plugin.md) (the plugin is no longer deferred)
 - **Date:** 2026-11-06
 
 ## Context

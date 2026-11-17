@@ -1,6 +1,6 @@
 # 3. The core is stack-agnostic and defines contracts that packs implement
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0004](0004-partial-resumption-with-a-plugin.md) (the plugin's pieces bind contracts through a table in each project's rules, not Copier variables)
 - **Date:** 2026-11-06
 
 ## Context
