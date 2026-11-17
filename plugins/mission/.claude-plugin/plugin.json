@@ -1,0 +1,11 @@
+{
+  "name": "mission",
+  "description": "Close a mission, review its diff against the issue and ship the pull request through native auto-merge.",
+  "author": {
+    "name": "Bruno Almeida",
+    "url": "https://github.com/brunoccalmeida"
+  },
+  "repository": "https://github.com/brunoccalmeida/automation-template",
+  "license": "MIT",
+  "keywords": ["workflow", "pull-request", "code-review", "definition-of-done"]
+}

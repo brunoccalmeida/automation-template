@@ -1,0 +1,15 @@
+{
+  "name": "brunoccalmeida-plugins",
+  "description": "Claude Code plugins for working in missions: one GitHub issue per chat, a Definition of Done, an independent reviewer and a merge decided by the branch ruleset.",
+  "owner": {
+    "name": "Bruno Almeida",
+    "url": "https://github.com/brunoccalmeida"
+  },
+  "plugins": [
+    {
+      "name": "mission",
+      "source": "./plugins/mission",
+      "description": "Close a mission, review its diff against the issue and ship the pull request through native auto-merge."
+    }
+  ]
+}
