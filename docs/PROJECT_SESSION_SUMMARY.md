@@ -8,16 +8,17 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item | Estado |
 | --- | --- |
-| Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). Missões 0 (#1) e A (#14) concluídas |
+| Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). Missões 0 (#1), A (#14), B (#15, piloto no kit) e A.1 (#19, #20, #21, correções do piloto) concluídas |
 | Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer`. Contrato dos projetos (tabela de contratos, configuração do repositório, `REVIEW.md`) no README do plugin |
-| Próxima missão | B — piloto do plugin no playwright-qa-starter-kit (#15) |
-| Fila | C — UAT e nextjs (#16) · D — este repositório usa o próprio plugin (#17) · Copier: #2 a #11, pausados |
+| Próxima missão | C1 — plugin no playwright-nextjs-e2e-ci (#22) |
+| Fila | C2 — plugin no UAT (#23) · D — este repositório usa o próprio plugin (#17) · Copier: #2 a #11, pausados |
+| Pendência no kit | Atualizar o plugin e apagar a regra local de contorno do `DIRTY` (issue aberta no kit após o merge da A.1) |
 | PRs abertos | nenhum após o merge |
 | Portões | CI `validate-plugins`: valida o marketplace e cada plugin; reprova qualquer erro ou *warning*, menos o `version` omitido de propósito. **Ainda não é obrigatório**: a `main` não tem ruleset (previsto na Missão 1, #2) |
 | Ferramenta de CI | Claude Code CLI 2.1.326 fixado com lockfile em `.github/tools/claude-cli/`; subir de versão exige aprovar de novo o `postinstall` (`allowScripts` preso à versão) |
 | Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos · [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) retomada parcial com plugin |
 | Evidência | [INVENTORY.md](INVENTORY.md): peças dos projetos de origem classificadas (núcleo / pack / app); nextjs como terceira fonte e a comparação das quatro versões das peças do plugin |
-| Armadilhas | Este repositório ainda roda as cópias à mão de `close-mission` e `reviewer` em `.claude/` até a Missão D. O UAT grava o squash com `COMMIT_MESSAGES`, então o registro no corpo do PR não chega ao Git lá (Missão C) |
+| Armadilhas | Este repositório ainda roda as cópias à mão de `close-mission` e `reviewer` em `.claude/` até a Missão D. O UAT grava o squash com `COMMIT_MESSAGES`, então o registro no corpo do PR não chega ao Git lá (Missão C2). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
 
 ## Plano de missões
 
@@ -35,8 +36,10 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 | 8. Backlog | 8a | #10 | Adotar no kit | `copier` no playwright-qa-starter-kit + correções que o template não cobre |
 | | 8b | #11 | Adotar no UAT | O mesmo no uat-automation-framework; prova o `copier update` em projeto real |
 | Plugin | A | #14 | Plugin do harness | Marketplace + plugin `mission`, contrato dos projetos, portão de validação no CI (concluída) |
-| | B | #15 | Piloto no kit | Tabela de contratos, `REVIEW.md`, plugin no escopo do projeto, uma missão real de ponta a ponta |
-| | C | #16 | UAT e nextjs | O mesmo nos outros dois; squash do UAT com a descrição do PR |
+| | B | #15 | Piloto no kit | Tabela de contratos, `REVIEW.md`, plugin no escopo do projeto, uma missão real de ponta a ponta (concluída, kit#51) |
+| | A.1 | #19, #20, #21 | Correções do piloto | `DIRTY` por merge no `ship-pr`; instalação sem CLI no PATH e `autoUpdate` explícito no README (concluída) |
+| | C1 | #22 | nextjs | O mesmo no playwright-nextjs-e2e-ci (substitui metade da #16) |
+| | C2 | #23 | UAT | O mesmo no UAT; squash com a descrição do PR, script de espera, `pip-audit` (substitui metade da #16) |
 | | D | #17 | Dogfooding | Este repositório usa o próprio plugin |
 
 A Missão 2b (#4) encolhe: as skills e o revisor já vivem no plugin; o Copier passa a renderizar só a tabela de contratos e o registro do marketplace ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md), consequências).
@@ -81,4 +84,4 @@ Princípio: cada peça entra na missão que a usa (YAGNI), e cada fase já nasce
 
 ## Próxima missão recomendada
 
-**Missão B (#15), piloto do plugin no playwright-qa-starter-kit.** Seguir o [README do plugin](../plugins/mission/README.md): declarar a tabela de contratos nas regras do kit, criar o `REVIEW.md` com os itens de Playwright e de ambiente compartilhado, adicionar o marketplace e instalar o plugin com `--scope project`, remover as cópias locais e fechar uma missão real com `/mission:close-mission` e `/mission:ship-pr`. O que o piloto revelar volta como correção para este repositório antes da Missão C.
+**Missão C1 (#22), plugin no playwright-nextjs-e2e-ci.** Seguir o [README do plugin](../plugins/mission/README.md), já com as correções do piloto: tabela de contratos nas regras, `REVIEW.md` (app congelado, banco novo por job), marketplace e plugin no escopo do projeto com `"autoUpdate": false` declarado, cópias locais removidas, uma missão real fechada com `/mission:close-mission` e integrada com `/mission:ship-pr`. O PR de lá fecha a issue daqui com `Closes brunoccalmeida/automation-template#22`. Depois, C2 (#23) no UAT.
