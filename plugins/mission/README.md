@@ -31,8 +31,8 @@ Add this table to the project's always-loaded rules (the file `CLAUDE.md` import
 
 | Contract | Required | Meaning | Used by |
 | --- | --- | --- | --- |
-| `check` | Yes | Static gates: lint, types, formatting | `close-mission` (gates), `reviewer` (what to ignore) |
-| `test` | Yes | The whole suite, with any precondition it needs to run as in CI (a service started, an environment variable set) | `close-mission` |
+| `check` | Yes | Static gates: lint, types, formatting | `close-mission` (gates), `ship-pr` (after resolving a `DIRTY` conflict), `reviewer` (what to ignore) |
+| `test` | Yes | The whole suite, with any precondition it needs to run as in CI (a service started, an environment variable set) | `close-mission`, `ship-pr` (after resolving a `DIRTY` conflict) |
 | `smoke` | No | The system under test is reachable and the pipeline works end to end | `close-mission`, when present |
 | `main-branch` | Yes | The branch pull requests merge into | `close-mission`, `ship-pr` |
 | `gate` | Yes | Name of the single check run the ruleset requires, which aggregates the others | `ship-pr` |
@@ -75,12 +75,48 @@ claude plugin marketplace add brunoccalmeida/automation-template --scope project
 claude plugin install mission@brunoccalmeida-plugins --scope project
 ```
 
+These commands need the `claude` CLI on `PATH`. With Claude Code installed only as the VS Code extension, it usually is not (`claude: command not found`). Either:
+
+- **Call the extension's binary by its full path**, for example on Windows `"$USERPROFILE/.vscode/extensions/anthropic.claude-code-<version>-win32-x64/resources/native-binary/claude.exe" plugin ...`, with the same arguments as above.
+- **Do it inside a Claude Code session in the project.** In a terminal session: `/plugin marketplace add brunoccalmeida/automation-template`, then `/plugin install mission@brunoccalmeida-plugins`, which opens the plugin's details instead of installing at once; choose **Install for all collaborators on this repository (project scope)** there ([Install and manage plugins](https://code.claude.com/docs/en/plugins/install.md#install-a-plugin)). In the VS Code panel, `/plugins` opens **Manage plugins**: add the marketplace on the **Marketplaces** tab, then install with **Install for this project** ([Install and manage plugins](https://code.claude.com/docs/en/plugins/install.md#install-a-plugin), VS Code tab). The in-session marketplace add documents no scope option ([`/plugin` in a session](https://code.claude.com/docs/en/plugins/cli-reference.md#plugin-in-a-session)), so check that `.claude/settings.json` ends up with the `extraKnownMarketplaces` entry shown under [Updates](#updates), and add it by hand if it does not: that entry is what registers the marketplace for everyone who clones the repository ([Host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace.md#register-the-marketplace-for-everyone-in-a-repository)).
+
+Either way, commit `.claude/settings.json`. It enables the plugin for collaborators but does not download it: each one runs the install once per clone ([Choose an install scope](https://code.claude.com/docs/en/plugins/install.md#choose-an-install-scope)).
+
 The repository is public, so cloning needs no credentials. On a machine without a GitHub SSH key, set `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1` so installs and updates from inside a session clone over HTTPS ([Host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace.md#serve-users-who-have-no-git-host-account)).
 
 ## Updates
 
-The manifest has no `version`, so each install is pinned to the commit it was installed from and an update moves it to the latest commit ([Versions and updates](https://code.claude.com/docs/en/plugins/loading.md#versions-and-updates)). Auto-update is off for third-party marketplaces by default and stays off: update on purpose, and review what changed first.
+The manifest has no `version`, so each install is pinned to the commit it was installed from and an update moves it to the latest commit ([Versions and updates](https://code.claude.com/docs/en/plugins/loading.md#versions-and-updates)). Auto-update stays off: update on purpose, and review what changed first.
+
+Off is today's default for third-party marketplaces, but `claude plugin marketplace add` does not write it down. Declare `"autoUpdate": false` beside `source` in `.claude/settings.json` and commit it, so the decision is explicit and does not depend on a default that may change ([Settings reference, `extraKnownMarketplaces`](https://code.claude.com/docs/en/settings-reference#extraknownmarketplaces): "When omitted, [...] third-party marketplaces default to `false`"):
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "brunoccalmeida-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "brunoccalmeida/automation-template"
+      },
+      "autoUpdate": false
+    }
+  },
+  "enabledPlugins": {
+    "mission@brunoccalmeida-plugins": true
+  }
+}
+```
+
+To update, run the first command in the shell or the second in a session ([Host a marketplace, Turn on auto-update](https://code.claude.com/docs/en/plugins/host-marketplace.md#turn-on-auto-update): "Without auto-update, users receive your changes when they run `/plugin marketplace update <name>` in a session or `claude plugin update <plugin>@<name>` in the shell"):
 
 ```sh
 claude plugin update mission@brunoccalmeida-plugins
 ```
+
+```text
+/plugin marketplace update brunoccalmeida-plugins
+```
+
+## Track the adoption from this repository
+
+A mission that adopts or changes the plugin in a project is often tracked by an issue in this repository. The project's pull request closes that issue only if its description says `Closes brunoccalmeida/automation-template#N`: a bare `#N` points to the project's own repository ([Linking a pull request to an issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword), "Issue in a different repository"). The keyword takes effect only when the pull request merges into the default branch.

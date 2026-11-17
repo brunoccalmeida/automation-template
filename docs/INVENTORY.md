@@ -60,7 +60,7 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 | Caminho do resumo | `docs/` em kit/nextjs/tpl; `docs/ai-workflow/` no UAT | Contrato `session-summary` | Diverge por projeto, sem desempate |
 | README | Traduções no UAT (A); genérico nos demais | Genérico | O passo de traduções é do app |
 | Revisor | kit/nextjs/tpl: `git diff main...HEAD` salvo no scratchpad; UAT: "resumo incluído", "rode os portões de novo" | **Somados** + **novo:** o texto da issue também vai num arquivo | O revisor só tem `Read`, `Grep` e `Glob`: com o número da issue apenas, ele não consegue lê-la |
-| PR | kit/nextjs/tpl: `Closes #N`, "peça o merge"; UAT: segue `.github/pull_request_template.md` e os formulários de issue, pede `/ship-pr` | **UAT** (condicional: "se existir") + **novo:** o corpo do PR é o registro da missão, e a skill confere que o squash usa a descrição do PR | Sem `PR_BODY`, o registro não chega ao Git: o UAT usa `COMMIT_MESSAGES` hoje (achado para a Missão C, #16) |
+| PR | kit/nextjs/tpl: `Closes #N`, "peça o merge"; UAT: segue `.github/pull_request_template.md` e os formulários de issue, pede `/ship-pr` | **UAT** (condicional: "se existir") + **novo:** o corpo do PR é o registro da missão, e a skill confere que o squash usa a descrição do PR | Sem `PR_BODY`, o registro não chega ao Git: o UAT usa `COMMIT_MESSAGES` hoje (achado para a Missão C2, #23) |
 | Pós-merge | UAT/tpl: "fato surgido no merge vira issue, não PR novo" | **UAT/tpl** | Evita PR só de registro |
 
 **`ship-pr`**
@@ -69,12 +69,12 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 | --- | --- | --- | --- |
 | Mecanismo | kit/nextjs: auto-merge nativo + laço em shell; UAT: auto-merge nativo + `scripts/wait_for_merge.py` (Poetry) | **kit/nextjs** | Nenhuma dependência de stack; o script do UAT existe também para avisar de checks do Codecov (A) |
 | `UNKNOWN` | kit: "até sair" (sem limite); UAT: no máximo 3 leituras, depois para e reporta | **UAT** | *Fail fast*: estado que não resolve não vira espera infinita |
-| `BEHIND`/`DIRTY` | kit: age na primeira leitura; UAT: confirma numa segunda (#160, um merge em andamento mostra esses estados por um instante) | **UAT** | Evidência de falha real no UAT |
+| `BEHIND`/`DIRTY` | kit: age na primeira leitura; UAT: confirma numa segunda (#160, um merge em andamento mostra esses estados por um instante) | **UAT** + **novo:** `DIRTY` resolvido por merge da branch principal, nunca rebase + force push | Evidência de falha real no UAT; o merge veio do piloto no kit (#19): as travas negam force push |
 | Conclusões aceitas do `gate` | kit: só `success`; UAT: `success`, `skipped`, `neutral` | **UAT** | São as que o GitHub aceita num check obrigatório; o predicado do kit para a espera como se o check tivesse falhado (mutação registrada no commit) |
 | Depois de falha | UAT: o auto-merge continua ligado; `--disable-auto` para impedir | **UAT** | Um re-run verde integra sozinho; o usuário precisa saber |
 | Espera interrompida e limite da sessão | Só o UAT trata | **UAT** | Tarefa em segundo plano morre com a sessão |
 | Branch e check | Fixos: `main`/`master`, `ci-passed` | Contratos `main-branch` e `gate` | O UAT usa `master` |
-| Check obrigatório além do `gate` | UAT exige também `pip-audit`; nenhuma versão espera por ele | Lacuna: o `timeout` nomeia o check | Missão C (#16) decide entre juntá-lo ao gate ou esperar por ele |
+| Check obrigatório além do `gate` | UAT exige também `pip-audit`; nenhuma versão espera por ele | Lacuna: o `timeout` nomeia o check | Missão C2 (#23) decide entre juntá-lo ao gate ou esperar por ele |
 
 **`reviewer`**
 

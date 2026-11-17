@@ -7,7 +7,7 @@ argument-hint: '[pr-number]'
 
 <!-- LTeX: language=pt-BR -->
 
-Integre à branch principal o PR $ARGUMENTS (sem número: o PR da branch atual, `gh pr view --json number`). Nomes em crases como `main-branch` e `gate` são **contratos**: o valor real está na tabela de contratos das regras do projeto (formato em `${CLAUDE_PLUGIN_ROOT}/README.md`). Contrato ausente da tabela: pare e pergunte, nunca adivinhe.
+Integre à branch principal o PR $ARGUMENTS (sem número: o PR da branch atual, `gh pr view --json number`). Nomes em crases como `main-branch`, `gate`, `check` e `test` são **contratos**: o valor real está na tabela de contratos das regras do projeto (formato em `${CLAUDE_PLUGIN_ROOT}/README.md`). Contrato ausente da tabela: pare e pergunte, nunca adivinhe.
 
 Quem decide se pode integrar é o **ruleset** da `main-branch` (check `gate` verde no SHA da head, branch atualizada, histórico linear). A skill não reimplementa essa decisão: liga o [auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request), que só integra depois que todos os requisitos passam, e espera o resultado. Nunca `--admin`.
 
@@ -15,7 +15,7 @@ Quem decide se pode integrar é o **ruleset** da `main-branch` (check `gate` ver
 2. Leia `gh pr view <n> --json state,headRefOid,mergeStateStatus`, uma leitura por comando.
    - `MERGED`: vá ao passo 5.
    - `UNKNOWN` (logo após um merge na `main-branch` ele ainda não foi calculado): leia de novo, no máximo 3 vezes; persistindo, pare e reporte.
-   - `BEHIND` ou `DIRTY`: confirme numa segunda leitura, porque um merge em andamento mostra esses estados por um instante. `BEHIND` confirmado: `gh pr update-branch <n>` e leia de novo (o SHA da head mudou). `DIRTY` confirmado (conflito): pare; o conflito se resolve localmente, e o auto-merge nunca integraria.
+   - `BEHIND` ou `DIRTY`: confirme numa segunda leitura, porque um merge em andamento mostra esses estados por um instante. `BEHIND` confirmado: `gh pr update-branch <n>` e leia de novo (o SHA da head mudou). `DIRTY` confirmado (conflito; o auto-merge nunca integraria): resolva com **merge** da `main-branch` na branch do PR, nunca com rebase. `git fetch origin`, `git merge origin/<main-branch>` na branch do PR, resolva o conflito, rode `check` e `test`, commit e **push normal**; leia de novo (o SHA da head mudou). Conflito que pede decisão de conteúdo (as duas versões trazem mudanças que se excluem): pare e pergunte. Por que merge: o rebase reescreve os commits já publicados e só sobe com force push, que as travas de push do projeto costumam negar; o merge só acrescenta um commit. É o que o `gh pr update-branch` faz por padrão, e o squash leva um único commit à `main-branch`, que segue linear do mesmo jeito.
 3. `gh pr merge <n> --auto --squash --match-head-commit <sha>`, sozinho no comando. O `--match-head-commit` faz o GitHub recusar o merge se a head mudar depois da leitura. Com o PR já pronto, o `gh` integra direto em vez de ligar o auto-merge; o passo 4 cobre os dois casos. Saída diferente de 0: leia o stderr e pare. Título e corpo do squash vêm do PR, então revise-os antes.
 4. Espere o **resultado**, não um estado intermediário: os checks são lidos pelo SHA da head (logo após um push, `gh pr checks` ainda mostra os do commit anterior, ou nenhum) e o merge acontece depois deles, de forma assíncrona. Rode em segundo plano, aguardando a notificação, este laço (Bash), que só sai num estado final:
 
