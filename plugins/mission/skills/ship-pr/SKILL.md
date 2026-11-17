@@ -33,6 +33,7 @@ Quem decide se pode integrar é o **ruleset** da `main-branch` (check `gate` ver
    - `MERGED`: vá ao passo 5.
    - `gate` com falha: o PR não integra. Diagnostique pelo log (`gh run view <run-id> --log-failed`) e, depois do push da correção, volte ao passo 2 (o SHA preso no passo 3 era o antigo). O auto-merge **continua ligado**: um re-run verde integra sozinho; para impedir, `gh pr merge <n> --disable-auto`.
    - `OPEN false` (auto-merge desligado, por exemplo por head nova ou `BEHIND`): volte ao passo 2.
+   - `CLOSED` (PR fechado sem merge): pare e reporte; não reabra nem tente integrar.
    - `timeout`: reporte o último estado. Um check obrigatório além do `gate`, pendente ou falho, também segura o merge e termina aqui: nomeie-o com `gh pr checks <n>`.
 5. Confirme `MERGED` (`gh pr view <n> --json state`) e só então `git switch <main-branch>`, `git pull --ff-only` e apague a branch local integrada.
 6. Prazo esgotado ou falha, com o usuário possivelmente ausente: avise também com `PushNotification`, se a ferramenta existir.

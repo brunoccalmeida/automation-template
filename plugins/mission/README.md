@@ -14,7 +14,7 @@ The plugin is the same for every project: it carries no per-project variables. I
 
 ### 1. A contract table in its rules
 
-Add this table to the project's always-loaded rules (the file `CLAUDE.md` imports, or `.claude/rules/`), so both the main session and the reviewer see it. The first column holds the contract names exactly as written here; the heading and the other columns may be in the project's language.
+Add this table to the project's always-loaded rules (the file `CLAUDE.md` imports, or `.claude/rules/`), so both the main session and the reviewer see it. The first column holds the contract names exactly as written here; the heading and the other columns may be in the project's language. The values below are an example taken from a Playwright project: the skills and the agent never name a tool, and this README does only to show what a filled-in table looks like.
 
 ```markdown
 ## Contracts
@@ -51,7 +51,7 @@ When a contract the skill needs is missing, the skill stops and asks instead of 
 
 ### 3. Optional: `REVIEW.md` at the repository root
 
-Project-specific review checks go in `REVIEW.md` at the repository root, free-form Markdown, the file Anthropic's [Code Review](https://code.claude.com/docs/en/code-review-customize.md) reads for review-only instructions. The `reviewer` agent reads it when it exists and treats it as additions to its own list and as things to skip. Keep general project rules in `CLAUDE.md`, which the reviewer already loads.
+Project-specific review checks go in `REVIEW.md` at the repository root, free-form Markdown, the file Anthropic's [Code Review](https://code.claude.com/docs/en/code-review-customize.md) reads for review-only instructions. The `reviewer` agent reads it when it exists and treats it as additions to its own list and as things to skip. Keep general project rules in `CLAUDE.md`, which the reviewer already loads. Example, from the same Playwright project:
 
 ```markdown
 # Review instructions
