@@ -41,18 +41,12 @@ jobs:
       - name: Install the pinned Claude Code CLI
         run: npm ci --prefix .github/tools/claude-cli
 
-      # Errors fail the run; warnings do not. No --strict: the plugins omit
-      # `version` so installs track commits (ADR 0004), and the missing
-      # version is a warning. The docs say to drop --strict in that case:
-      # https://code.claude.com/docs/en/plugins/publish.md#prepare-your-plugin-for-release
-      # Validating the marketplace root checks each entry and its
-      # plugin.json but not the skill and agent files, so every plugin
-      # directory is validated too.
+      # --strict minus one exception: any error or warning fails, except the
+      # missing `version` the plugins omit on purpose (ADR 0004). The script
+      # validates the marketplace root and every plugin directory, because
+      # the root run does not read skill and agent files. Standard library
+      # only, on the runner's python3.
       - name: Validate the marketplace and every plugin
         run: |
-          claude=.github/tools/claude-cli/node_modules/.bin/claude
-          "$claude" --version
-          "$claude" plugin validate .
-          for plugin in plugins/*/; do
-            "$claude" plugin validate "$plugin"
-          done
+          .github/tools/claude-cli/node_modules/.bin/claude --version
+          python3 .github/scripts/validate_plugins.py
