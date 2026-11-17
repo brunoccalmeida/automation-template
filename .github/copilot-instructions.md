@@ -28,7 +28,7 @@ Registre no commit como o RED foi visto (comando e erro). Portões (lint, CI) se
 ## Melhores práticas sempre
 
 - Havendo mais de um caminho, recomende o indicado pelas melhores práticas e cite o princípio que o sustenta (ex.: YAGNI, fail fast, DRY).
-- Antes de perguntar uma decisão ao usuário, **consulte** a documentação oficial (Copier, Git, GitHub, Claude Code), sem citar de memória; a pergunta traz as fontes e a recomendação.
+- Em qualquer situação de dúvida, antes de sugerir o que fazer ou perguntar uma decisão ao usuário, **consulte as melhores práticas mais modernas**, a começar pela documentação oficial na versão usada no projeto (Copier, Git, GitHub, Claude Code), sem citar de memória; a sugestão traz as fontes, a recomendação e o que é julgamento próprio.
 - O padrão é aplicar a prática estabelecida. Investigação ou medição sob medida só quando a economia esperada supera claramente o custo; estimativa e suposição são rotuladas como tais.
 - Sem atalhos por conveniência. Desvios só com justificativa explícita no commit, na documentação ou num ADR.
 - Regra deste arquivo que não siga as melhores práticas deve ser substituída, não contornada.

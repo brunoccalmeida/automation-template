@@ -16,6 +16,8 @@ Levantamento da Missão 0 (06/11/2026): o que existe em [uat-automation-framewor
 
 Postura: com só dois projetos, **na dúvida, fica de fora** (regra de três). Sobe para o template quando um terceiro projeto repetir o padrão.
 
+**Terceira fonte (Missão A, 17/11/2026):** [playwright-nextjs-e2e-ci](https://github.com/brunoccalmeida/playwright-nextjs-e2e-ci) (**nextjs**, Playwright/TS sobre um app Next.js congelado) repete o harness e disparou a [retomada parcial](adr/0004-partial-resumption-with-a-plugin.md). Por enquanto ele entra só como fonte das peças do plugin ([§2](#missão-a-as-quatro-versões-das-peças-do-plugin)); as demais tabelas continuam com as duas fontes originais até a retomada do Copier.
+
 ## 1. Regras sempre carregadas (`.github/copilot-instructions.md`, importado pelo `CLAUDE.md`)
 
 | Seção | UAT | kit | Melhor | Cat. | Fase |
@@ -42,6 +44,48 @@ Postura: com só dois projetos, **na dúvida, fica de fora** (regra de três). S
 | `ship-pr` | `merge_when_green.py` (187 linhas + testes, depende de Poetry) | **Auto-merge nativo** com `--match-head-commit` e laço de espera em shell; sem script | **kit**: menos código, nenhuma dependência de stack | N | 2b |
 | `reviewer` | 5 itens | 6 itens: **+ isolamento no ambiente compartilhado** | **kit** | N, com a linha "ignore o que X já impõe" como ponto de extensão do pack | 2b |
 | `start-mission` | Não tem | Não tem | Lacuna | N | 2b |
+
+As três primeiras linhas valem como histórico: a Missão A (#14) levou essas peças para o plugin `mission`, comparando as quatro versões abaixo, e o vínculo com os comandos passou a ser a tabela de contratos de cada projeto, não `{{ cmd_check }}` ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)).
+
+### Missão A: as quatro versões das peças do plugin
+
+Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**). Nenhum hash coincide em `close-mission` e `reviewer`; `ship-pr` (e `.claude/settings.json`) é idêntico entre kit e nextjs, e este repositório não tem `ship-pr`. "Novo" marca o que nenhuma versão tinha.
+
+**`close-mission`**
+
+| Trecho | Versões | Vence | Por quê |
+| --- | --- | --- | --- |
+| Portões verdes | kit/nextjs: `npm run check`/`pnpm check` "e os testes"; UAT: comandos detalhados, "no estado final da branch", "portão vermelho se corrige antes do revisor, nunca se pula"; tpl: checks do template | **UAT** (as duas frases), com os contratos `check`, `test` e `smoke` | As frases são agnósticas; os comandos vão para a tabela de contratos |
+| Resumo de sessão | kit/nextjs/tpl: estado + seção "Missão N" com decisões, fontes, RED; UAT: só estado, histórico no corpo do PR; tpl: "decisão duradoura vai para ADR" | **UAT + tpl**: resumo só com estado; decisão duradoura em regra ou ADR | O resumo do UAT virou histórico (células de 1.200+ caracteres) antes de mudar; ADR 0004 §8 traz as fontes |
+| Caminho do resumo | `docs/` em kit/nextjs/tpl; `docs/ai-workflow/` no UAT | Contrato `session-summary` | Diverge por projeto, sem desempate |
+| README | Traduções no UAT (A); genérico nos demais | Genérico | O passo de traduções é do app |
+| Revisor | kit/nextjs/tpl: `git diff main...HEAD` salvo no scratchpad; UAT: "resumo incluído", "rode os portões de novo" | **Somados** + **novo:** o texto da issue também vai num arquivo | O revisor só tem `Read`, `Grep` e `Glob`: com o número da issue apenas, ele não consegue lê-la |
+| PR | kit/nextjs/tpl: `Closes #N`, "peça o merge"; UAT: segue `.github/pull_request_template.md` e os formulários de issue, pede `/ship-pr` | **UAT** (condicional: "se existir") + **novo:** o corpo do PR é o registro da missão, e a skill confere que o squash usa a descrição do PR | Sem `PR_BODY`, o registro não chega ao Git: o UAT usa `COMMIT_MESSAGES` hoje (achado para a Missão C, #16) |
+| Pós-merge | UAT/tpl: "fato surgido no merge vira issue, não PR novo" | **UAT/tpl** | Evita PR só de registro |
+
+**`ship-pr`**
+
+| Trecho | Versões | Vence | Por quê |
+| --- | --- | --- | --- |
+| Mecanismo | kit/nextjs: auto-merge nativo + laço em shell; UAT: auto-merge nativo + `scripts/wait_for_merge.py` (Poetry) | **kit/nextjs** | Nenhuma dependência de stack; o script do UAT existe também para avisar de checks do Codecov (A) |
+| `UNKNOWN` | kit: "até sair" (sem limite); UAT: no máximo 3 leituras, depois para e reporta | **UAT** | *Fail fast*: estado que não resolve não vira espera infinita |
+| `BEHIND`/`DIRTY` | kit: age na primeira leitura; UAT: confirma numa segunda (#160, um merge em andamento mostra esses estados por um instante) | **UAT** | Evidência de falha real no UAT |
+| Conclusões aceitas do `gate` | kit: só `success`; UAT: `success`, `skipped`, `neutral` | **UAT** | São as que o GitHub aceita num check obrigatório; o predicado do kit para a espera como se o check tivesse falhado (mutação registrada no commit) |
+| Depois de falha | UAT: o auto-merge continua ligado; `--disable-auto` para impedir | **UAT** | Um re-run verde integra sozinho; o usuário precisa saber |
+| Espera interrompida e limite da sessão | Só o UAT trata | **UAT** | Tarefa em segundo plano morre com a sessão |
+| Branch e check | Fixos: `main`/`master`, `ci-passed` | Contratos `main-branch` e `gate` | O UAT usa `master` |
+| Check obrigatório além do `gate` | UAT exige também `pip-audit`; nenhuma versão espera por ele | Lacuna: o `timeout` nomeia o check | Missão C (#16) decide entre juntá-lo ao gate ou esperar por ele |
+
+**`reviewer`**
+
+| Trecho | Versões | Vence | Por quê |
+| --- | --- | --- | --- |
+| Onde estão as regras | Um caminho fixo diferente em cada um (`copilot-instructions.md`, `AGENTS.md` + `.claude/rules/`, `tests.md`, `docs/adr/`) | "Já estão no seu contexto" + `REVIEW.md` na raiz | Subagentes carregam a hierarquia do `CLAUDE.md`; `REVIEW.md` é a convenção da Anthropic para instruções só de revisão (ADR 0004) |
+| Espera do estado final | kit/nextjs: com exemplos de Playwright; UAT/tpl: genérico | **UAT/tpl** | Os exemplos de stack vão para o `REVIEW.md` de cada projeto |
+| Isolamento | kit: ambiente compartilhado; UAT: fixtures do Behave e workers; nextjs: banco novo por job; tpl: trocado por "arquitetura do template" | Núcleo genérico ("estado limpo, cria os próprios dados, não depende de ordem") | O específico vai para o `REVIEW.md` |
+| Itens próprios | nextjs: "app congelado"; tpl: "arquitetura do template" | `REVIEW.md` de cada projeto | Só valem em um projeto (Missões C e D) |
+| "Ignore o que X já impõe" | Lista de ferramentas por stack | Contrato `check` + `REVIEW.md` | Agnóstico |
+| Afirmação sobre ferramenta externa cita a fonte | Só tpl | **tpl** | Todas as regras proíbem citar de memória |
 
 ## 3. Configuração e testes do próprio harness
 

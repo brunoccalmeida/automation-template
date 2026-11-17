@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Least privilege: the job only reads the repository
+permissions:
+  contents: read
+
+# A new push to a PR supersedes the run of the previous commit; runs on
+# main are never cancelled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate-plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Validation is offline work: no telemetry, auto-update or other
+      # nonessential traffic from the CLI
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: '1'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Node only runs npm's postinstall, which links the CLI's native binary
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .github/tools/claude-cli/.node-version
+
+      # ci, not install: the lockfile pins the CLI and its platform binary
+      # by integrity hash, and a lockfile out of sync fails the step
+      - name: Install the pinned Claude Code CLI
+        run: npm ci --prefix .github/tools/claude-cli
+
+      # --strict minus one exception: any error or warning fails, except the
+      # missing `version` the plugins omit on purpose (ADR 0004). The script
+      # validates the marketplace root and every plugin directory, because
+      # the root run does not read skill and agent files. Standard library
+      # only, on the runner's python3.
+      - name: Validate the marketplace and every plugin
+        run: |
+          .github/tools/claude-cli/node_modules/.bin/claude --version
+          python3 .github/scripts/validate_plugins.py
