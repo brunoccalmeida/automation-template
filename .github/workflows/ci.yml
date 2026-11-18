@@ -50,3 +50,44 @@ jobs:
         run: |
           .github/tools/claude-cli/node_modules/.bin/claude --version
           python3 .github/scripts/validate_plugins.py
+
+  # The single required check of the ruleset on main (contract `gate`).
+  # Requiring each job by name would mean editing the ruleset whenever a job
+  # is added or renamed; this job's name never changes. always(): a required
+  # check that is skipped counts as passed, and a job skipped because a
+  # dependency failed may not block the merge, so the gate must run, and
+  # fail, when a dependency fails or is cancelled (GitHub Docs,
+  # "Troubleshooting required status checks"). Same shape as the gate of
+  # playwright-qa-starter-kit (docs/INVENTORY.md).
+  ci-passed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [validate-plugins]
+    if: ${{ always() }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # A job missing from "needs" would not gate the merge. Compare the
+      # jobs this gate waited for with every other job of this workflow.
+      - name: Require the gate to need every job
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          expected=$(yq -o=json '.jobs | keys | map(select(. != "ci-passed")) | sort' .github/workflows/ci.yml | jq -c .)
+          actual=$(jq -c 'keys | sort' <<< "$NEEDS")
+          echo "workflow jobs: $expected"
+          echo "gate needs:    $actual"
+          test "$expected" = "$actual"
+
+      # Allowlist: only an explicit "success" passes; failure, cancelled and
+      # skipped all fail, because a skipped job tested nothing.
+      - name: Require every job to succeed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          jq -r 'to_entries[] | "\(.key): \(.value.result)"' <<< "$NEEDS"
+          jq -e 'length > 0 and all(.[]; .result == "success")' <<< "$NEEDS" > /dev/null
