@@ -51,11 +51,6 @@ jobs:
           .github/tools/claude-cli/node_modules/.bin/claude --version
           python3 .github/scripts/validate_plugins.py
 
-  probe:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo probe
-
   # The single required check of the ruleset on main (contract `gate`).
   # Requiring each job by name would mean editing the ruleset whenever a job
   # is added or renamed; this job's name never changes. always(): a required
