@@ -8,6 +8,18 @@ Regras que valem em todo chat, compartilhadas entre Claude Code (`CLAUDE.md` imp
 
 Template [Copier](https://copier.readthedocs.io/) para projetos de automação de testes: um **núcleo** (regras, skills, revisor, CI, configuração do GitHub) que todo projeto herda, mais um **pack** por ferramenta (`ts-playwright`, `python-behave-selenium`). Fontes: `uat-automation-framework` e `playwright-qa-starter-kit`. As decisões de arquitetura estão em `docs/adr/`; a evidência do que entra, em `docs/INVENTORY.md`.
 
+## Contratos
+
+Valores que o plugin [`mission`](../plugins/mission/README.md) usa neste repositório (formato no README do plugin). O artefato publicado hoje é o próprio plugin, então `check` e `test` são a validação dele até a Missão 1 (#2) trazer os testes do template.
+
+| Contrato | Valor |
+| --- | --- |
+| `check` | `npm ci --prefix .github/tools/claude-cli` uma vez, depois `python3 .github/scripts/validate_plugins.py` (no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
+| `test` | o mesmo que `check` |
+| `main-branch` | `main` |
+| `gate` | `ci-passed` |
+| `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |
+
 ## Regras de arquitetura do template
 
 - **O núcleo não cita stack** (ferramenta, linguagem, tipo de alvo): define contratos (`check`, `test`, `smoke`, configuração por variáveis de ambiente) que cada pack implementa via variáveis do Copier ([ADR 0003](../docs/adr/0003-stack-agnostic-core-defines-contracts.md)).
@@ -43,7 +55,7 @@ Contexto longo degrada a qualidade; cada chat cuida de **uma missão** (uma GitH
 2. Listar issues e PRs abertos (`gh issue list`, `gh pr list`).
 3. Propor a missão de maior prioridade e confirmar com o usuário. Prioridade: bloqueio → segurança → visibilidade → dívida técnica (labels `priority: P0/P1/P2`).
 
-**Fechamento** (automático): skill `/close-mission`, a Definition of Done; o registro de sessão vai no PR da própria missão.
+**Fechamento** (automático): skill `/mission:close-mission`, a Definition of Done; o registro da missão vai no corpo do PR da própria missão.
 
 ## Gasto de tokens (contexto)
 
@@ -75,8 +87,10 @@ Nunca "chute" soluções: **observe** (mensagem completa, log), **contextualize*
 
 - **Conventional Commits** (`feat`, `fix`, `refactor`, `test`, `docs`, `style`, `perf`, `build`, `ci`, `chore`; escopo opcional), commits atômicos.
 - **Um PR aberto por vez:** a `main` exige branch atualizada, e cada merge desatualiza os outros PRs abertos. Trabalho pronto espera em commit local até a fila esvaziar.
-- **Antes de abrir o PR da missão**, o subagente `reviewer` revisa o diff (salvo em arquivo no scratchpad) contra a issue; corrija os achados que procedem e registre os descartados com o porquê.
-- **Merge só pelo usuário.** Squash, com os checks obrigatórios verdes no SHA da head. Nunca `--admin` para furar proteção de branch.
+- **Antes de abrir o PR da missão**, o subagente `mission:reviewer` revisa o diff (salvo em arquivo no scratchpad) contra a issue, com as verificações próprias deste repositório em [`REVIEW.md`](../REVIEW.md); corrija os achados que procedem e registre os descartados com o porquê.
+- **Merge só pelo usuário**, com `/mission:ship-pr <n>`: squash por auto-merge nativo, decidido pelo ruleset (`gate` verde no SHA da head). Nunca `--admin` para furar proteção de branch.
+- **Ruleset como código:** [`.github/rulesets/protect-main.json`](rulesets/protect-main.json) descreve o ruleset ativo (id 27584439), mas editar o arquivo não muda o GitHub. Mudou o arquivo: aplique com `gh api -X PUT repos/{owner}/{repo}/rulesets/27584439 --input .github/rulesets/protect-main.json` e confira com `gh api repos/{owner}/{repo}/rulesets/27584439`; mudou na interface: traga a mudança para o arquivo. A checagem automática de divergência fica para a Missão 4 (#6).
+- **Mudança no próprio plugin:** a missão é fechada pela versão publicada (instalada do GitHub, `autoUpdate: false`), não pela da branch. Para experimentar a da branch, abra uma sessão com `claude --plugin-dir ./plugins/mission`, que sobrepõe a instalada só nessa sessão ([Plugin loading reference](https://code.claude.com/docs/en/plugins/loading.md#name-conflicts)). Depois do merge, `claude plugin update mission@brunoccalmeida-plugins`.
 - Nunca commitar credenciais; `.env` fica fora do Git.
 
 ## Princípios

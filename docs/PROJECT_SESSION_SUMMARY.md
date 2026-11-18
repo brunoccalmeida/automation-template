@@ -8,24 +8,24 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 
 | Item | Estado |
 | --- | --- |
-| Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). Missões 0 (#1), A (#14), B (#15, piloto no kit) e A.1 (#19, #20, #21, correções do piloto) concluídas |
-| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer`. Contrato dos projetos (tabela de contratos, configuração do repositório, `REVIEW.md`) no README do plugin |
-| Próxima missão | C1 — plugin no playwright-nextjs-e2e-ci (#22) |
-| Fila | C2 — plugin no UAT (#23) · D — este repositório usa o próprio plugin (#17) · Copier: #2 a #11, pausados |
-| Pendência no kit | Atualizar o plugin e apagar a regra local de contorno do `DIRTY` (issue aberta no kit após o merge da A.1) |
+| Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). **Fila do plugin concluída:** A (#14), B (#15, kit), A.1 (#19, #20, #21), C1 (#22, nextjs), C2 (#23, UAT) e D (#17, este repositório) |
+| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer`, em uso nos quatro projetos, incluindo este (instalado do GitHub, `autoUpdate: false`) |
+| Próxima missão | Nenhuma neste repositório: a prioridade é o plano de portfólio. O Copier (#2 a #11) espera o gatilho do [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) e da [Pausa](#pausa) |
+| Fila | Documentação do plugin (P2): #25 (`/reload-plugins` após instalar pelo shell) e #26 (Copilot e o plugin) · Copier: #2 a #11, pausados |
+| Pendência no kit | Atualizar o plugin e apagar a regra local de contorno do `DIRTY` (kit#52) |
 | PRs abertos | nenhum após o merge |
-| Portões | CI `validate-plugins`: valida o marketplace e cada plugin; reprova qualquer erro ou *warning*, menos o `version` omitido de propósito. **Ainda não é obrigatório**: a `main` não tem ruleset (previsto na Missão 1, #2) |
+| Portões | `ci-passed`, único check exigido pelo ruleset "Protect main" ([`.github/rulesets/`](../.github/rulesets/protect-main.json), #28): agrega `validate-plugins` (marketplace e cada plugin; reprova erro ou *warning*, menos o `version` omitido) e reprova se um job do workflow faltar no `needs` |
 | Ferramenta de CI | Claude Code CLI 2.1.326 fixado com lockfile em `.github/tools/claude-cli/`; subir de versão exige aprovar de novo o `postinstall` (`allowScripts` preso à versão) |
 | Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos · [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) retomada parcial com plugin |
 | Evidência | [INVENTORY.md](INVENTORY.md): peças dos projetos de origem classificadas (núcleo / pack / app); nextjs como terceira fonte e a comparação das quatro versões das peças do plugin |
-| Armadilhas | Este repositório ainda roda as cópias à mão de `close-mission` e `reviewer` em `.claude/` até a Missão D. O UAT grava o squash com `COMMIT_MESSAGES`, então o registro no corpo do PR não chega ao Git lá (Missão C2). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
+| Armadilhas | Mudança no plugin é fechada pela versão publicada; a da branch se experimenta com `claude --plugin-dir ./plugins/mission`, e depois do merge, `claude plugin update mission@brunoccalmeida-plugins` (regras, Git). Plugin instalado pelo shell só carrega após `/reload-plugins` ou sessão nova (#25). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
 
 ## Plano de missões
 
 | Fase | # | Issue | Missão | Entrega |
 | --- | --- | --- | --- | --- |
 | 0. Fundação | 0 | #1 | Fundação | Repositório, 3 ADRs, inventário, harness mínimo deste repositório, issues |
-| 1. Esqueleto do template | 1 | #2 | Walking skeleton | `copier.yml` mínimo, um arquivo gerado, CI que roda `copier copy` e valida o resultado; gate `ci-passed`, ruleset, `ship-pr`. Primeiro teste visto falhando |
+| 1. Esqueleto do template | 1 | #2 | Walking skeleton | `copier.yml` mínimo, um arquivo gerado, CI que roda `copier copy` e valida o resultado, como job novo no `needs` do `ci-passed` (gate e ruleset vieram na Missão D, #28). Primeiro teste visto falhando |
 | 2. Núcleo agnóstico | 2a | #3 | Regras e docs | Regras do núcleo, `CLAUDE.md`, regras por caminho; modelos: resumo de sessão, KNOWN_ISSUES, ADR, política de flaky, relatório de spike |
 | | 2b | #4 | Skills, revisor e testes do harness | `start-mission`, `close-mission`, `ship-pr` (auto-merge nativo), `reviewer` com pontos de extensão; comandos como variáveis do Copier; testes: limite de linhas, cópias Claude/Copilot iguais, links, **nenhum termo de stack no núcleo** |
 | 3. Fazer cumprir | 3 | #5 | Permissões, hooks e segurança | `allow`/`deny`, hook `SessionStart`, hook de segredos, checagem de encoding, gitleaks, zizmor |
@@ -38,9 +38,9 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
 | Plugin | A | #14 | Plugin do harness | Marketplace + plugin `mission`, contrato dos projetos, portão de validação no CI (concluída) |
 | | B | #15 | Piloto no kit | Tabela de contratos, `REVIEW.md`, plugin no escopo do projeto, uma missão real de ponta a ponta (concluída, kit#51) |
 | | A.1 | #19, #20, #21 | Correções do piloto | `DIRTY` por merge no `ship-pr`; instalação sem CLI no PATH e `autoUpdate` explícito no README (concluída) |
-| | C1 | #22 | nextjs | O mesmo no playwright-nextjs-e2e-ci (substitui metade da #16) |
-| | C2 | #23 | UAT | O mesmo no UAT; squash com a descrição do PR, script de espera, `pip-audit` (substitui metade da #16) |
-| | D | #17 | Dogfooding | Este repositório usa o próprio plugin |
+| | C1 | #22 | nextjs | O mesmo no playwright-nextjs-e2e-ci (substitui metade da #16) (concluída, nextjs#54) |
+| | C2 | #23 | UAT | O mesmo no UAT; squash com a descrição do PR, script de espera, `pip-audit` (substitui metade da #16) (concluída, UAT#181) |
+| | D | #17 | Dogfooding | Este repositório usa o próprio plugin; gate `ci-passed` e ruleset (#28) tirados da Missão 1 (concluída) |
 
 A Missão 2b (#4) encolhe: as skills e o revisor já vivem no plugin; o Copier passa a renderizar só a tabela de contratos e o registro do marketplace ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md), consequências).
 
@@ -84,4 +84,4 @@ Princípio: cada peça entra na missão que a usa (YAGNI), e cada fase já nasce
 
 ## Próxima missão recomendada
 
-**Missão C1 (#22), plugin no playwright-nextjs-e2e-ci.** Seguir o [README do plugin](../plugins/mission/README.md), já com as correções do piloto: tabela de contratos nas regras, `REVIEW.md` (app congelado, banco novo por job), marketplace e plugin no escopo do projeto com `"autoUpdate": false` declarado, cópias locais removidas, uma missão real fechada com `/mission:close-mission` e integrada com `/mission:ship-pr`. O PR de lá fecha a issue daqui com `Closes brunoccalmeida/automation-template#22`. Depois, C2 (#23) no UAT.
+**Nenhuma neste repositório.** A fila do plugin (A a D) terminou; a prioridade é o plano de portfólio, em chat e repositório próprios. O Copier (#2 a #11) continua pausado até o gatilho da [Pausa](#pausa) e do [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md). Se o plugin precisar de atenção antes, #25 e #26 são documentação pequena (P2); o kit tem a kit#52 pendente.

@@ -115,7 +115,7 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 
 | Peça | UAT | kit | Melhor | Cat. | Fase |
 | --- | --- | --- | --- | --- | --- |
-| Gate `ci-passed` (único check obrigatório, `always()`, lista de permissão) | `check_needs.py` + `test_ci_gate.py` (Python) | Inline em `yq`/`jq`, e **confere que o gate depende de todo job** | **kit**: sem dependência de stack | N | 1 / 2b |
+| Gate `ci-passed` (único check obrigatório, `always()`, lista de permissão) | `check_needs.py` + `test_ci_gate.py` (Python) | Inline em `yq`/`jq`, e **confere que o gate depende de todo job** | **kit**: sem dependência de stack | N | D (#28) neste repo · 2b |
 | Actions fixadas por SHA | Sim, **cobrado** por `test_workflow_pinning.py` | Sim, mas nada cobra | **UAT** (cobrança); avaliar se o zizmor substitui o teste | N | 3 |
 | Endurecimento do workflow | `permissions: contents: read`; **sem** `concurrency` no nível do workflow (só no job de deploy do Pages), `persist-credentials: false` e `timeout-minutes` | Os quatro | **kit** | N | 1 |
 | Dependabot | Agrupado; ecossistema `docker-compose` | Agrupado + **`cooldown` de 7 dias** + `versioning-strategy` | **kit** (bloco `github-actions` no núcleo, bloco do ecossistema no pack) | N + P | 4 / 5 / 6 |
@@ -123,7 +123,7 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 | Segunda fonte de vulnerabilidades, diária | `pip-audit --strict` (PR + diário) | **Não tem** | **UAT** | Padrão N, implementação P | 5 / 6 |
 | Hooks locais antes do commit | `pre-commit` (rodado também no CI) | Não tem | **UAT**, com ressalva: `rev: v5.0.0` por tag (contradiz a regra de SHA) e o repositório `pre-commit-hooks` repetido | P | 6 |
 | Checagem de encoding (UTF-8, sem NUL) | `check_text_encoding.py` (o `.gitignore` em UTF-16, gerado pelo PowerShell, não casava nada, #26) | Não tem | **UAT**; o problema é do Windows, não da stack | N | 3 |
-| Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Empate; o núcleo usa `main` | N | Este repo: 1 · projeto gerado: 4 |
+| Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Empate; o núcleo usa `main` | N | Este repo: Missão D (#28), como código em `.github/rulesets/` · projeto gerado: 4 |
 | Labels `priority: P0/P1/P2` | Iguais | Iguais | Empate | N | Este repo: 0 · projeto gerado: 4 |
 | Config do repositório (só squash, auto-merge, título/corpo do PR) | Auto-merge desligado | Configurado | kit | N | Este repo: 0 · projeto gerado: 4 |
 | Modelos de issue e PR | Não tem | Não tem | Lacuna | N | 4 |
@@ -179,4 +179,4 @@ Nenhum dos dois tem, e o template passa a ter:
 
 - **Fim de linha (2a).** O UAT rejeitou `eol=lf` porque força LF no disco do Windows; o kit precisa dele porque o Prettier exige LF. Este repositório usa `eol=lf` (os editores atuais lidam bem com LF no Windows). Confirmar com a documentação do Git antes de pôr no núcleo.
 - **Retries no CI (2a, política de flaky).** O kit usa `retries: 2` e confia no relatório para mostrar o flaky; o UAT recusou retry no #129 citando Fowler ("rodar de novo até passar torna o teste inútil"). A política precisa decidir com fontes, e o que o núcleo exige é que a instabilidade fique **visível e rastreada** (issue), seja qual for o mecanismo.
-- **O harness deste repositório (2a/2b).** Para trabalhar por missões desde já, este repositório tem uma cópia mínima do harness do kit (`CLAUDE.md`, regras, `close-mission`, `reviewer`). É a terceira cópia à mão, o próprio problema que o template resolve. A Fase 2 deve fazer este repositório usar o núcleo (*dogfooding*): gerado por ele, ou com um teste que compara as duas versões.
+- **O harness deste repositório (2a/2b).** Para trabalhar por missões desde já, este repositório tem uma cópia mínima do harness do kit (`CLAUDE.md`, regras, `close-mission`, `reviewer`). É a terceira cópia à mão, o próprio problema que o template resolve. A Fase 2 deve fazer este repositório usar o núcleo (*dogfooding*): gerado por ele, ou com um teste que compara as duas versões. **Atualização (Missão D, #17):** `close-mission`, `ship-pr` e `reviewer` já vêm do plugin `mission`, instalado do próprio repositório; ficam à mão só `CLAUDE.md` e as regras, que a Fase 2 resolve.
