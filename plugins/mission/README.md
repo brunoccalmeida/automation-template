@@ -5,8 +5,9 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
 | Component | Invoke | What it does |
 | --- | --- | --- |
 | `close-mission` skill | `/mission:close-mission`, or Claude when the implementation is ready | Definition of Done: gates green, issues up to date, session summary, reviewer, pull request carrying the mission record |
-| `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
+| `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
 | `reviewer` agent | `mission:reviewer`, called by `close-mission` | Reviews the mission diff against its issue and against what no automated gate covers |
+| Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |
 
 The plugin is the same for every project: it carries no per-project variables. It names **contracts**, and each project declares the real command or value behind each contract in its own rules, as described below. The skills and the reviewer are written in Brazilian Portuguese, the language of the rules of the projects that use them.
 
@@ -65,6 +66,16 @@ Project-specific review checks go in `REVIEW.md` at the repository root, free-fo
 
 - Anything `tsc`, ESLint and Prettier already enforce.
 ```
+
+## Ship in a fresh chat
+
+Run `/mission:ship-pr <n>` as the **first message of a new chat**: `/clear` first, in the chat that implemented the mission. `ship-pr` needs nothing from that conversation (the pull request body holds the mission record, and the session summary holds the state), but every tool call re-sends the whole context, and waiting for CI and the merge takes dozens of calls. Measured on 8 missions of a project that uses this plugin, a fresh chat would have cost about 10% less per mission (6 to 14%) ([#30](https://github.com/brunoccalmeida/automation-template/issues/30)).
+
+A habit fails, so the plugin enforces it with a [`UserPromptExpansion`](https://code.claude.com/docs/en/hooks.md#userpromptexpansion) hook ([`hooks/hooks.json`](hooks/hooks.json), [`scripts/require-fresh-chat.sh`](scripts/require-fresh-chat.sh)). That event fires when a typed slash command expands, the path a `PreToolUse` hook on `Skill` does not see. The hook reads the chat transcript and blocks the command, with a message saying to run `/clear`, when the transcript already holds an assistant reply. Other commands and plain prompts never reach it: its matcher is `^mission:ship-pr$`, anchored because a matcher with `:` is an unanchored regular expression ([Matcher patterns](https://code.claude.com/docs/en/hooks.md#matcher-patterns)).
+
+- **It guards cost, not safety, so it fails open.** A missing or unreadable transcript allows the command and says why on stderr. With exit code 0, that stderr never reaches Claude; read it with debug logging ([Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0): "Claude never sees stderr from a hook that exits 0. To read it yourself [...] enable debug logging").
+- **It needs `sh`, `grep` and `sed`**, present on macOS and Linux and in Git Bash, which runs plugin hooks on Windows. On Windows without Git Bash, hooks run in PowerShell ([Exec form and shell form](https://code.claude.com/docs/en/hooks.md#exec-form-and-shell-form)), `sh` is not found, and the hook fails open: `ship-pr` runs, unguarded.
+- **Resuming a wait counts as prior conversation.** If a `ship-pr` wait was interrupted, `/clear` and run `/mission:ship-pr <n>` again; the skill reads the real state of the pull request first.
 
 ## Install in a project
 

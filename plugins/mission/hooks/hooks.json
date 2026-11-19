@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "matcher": "^mission:ship-pr$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/require-fresh-chat.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
