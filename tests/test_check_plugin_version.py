@@ -114,9 +114,11 @@ class CheckPluginVersionTest(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(run.stdout.strip(), "", "nothing may reach the user or Claude's context")
 
-    def assert_fails_open(self, run: subprocess.CompletedProcess) -> None:
+    def assert_fails_open(self, run: subprocess.CompletedProcess, reason: str) -> None:
         self.assert_silent(run)
-        self.assertIn("skipping", run.stderr, "failing open must say why on stderr")
+        # The specific reason, so an earlier exit cannot pass for this one
+        self.assertIn(reason, run.stderr, "failing open must say why on stderr")
+        self.assertIn("skipping", run.stderr)
 
     def test_warns_when_the_installed_version_is_not_the_published_one(self) -> None:
         installed = "0123456789ab"
@@ -145,18 +147,18 @@ class CheckPluginVersionTest(unittest.TestCase):
         missing = (self.directory / "no such repo").as_posix()
         root = make_cache_entry(self.directory, "0123456789ab", missing)
 
-        self.assert_fails_open(run_hook(root))
+        self.assert_fails_open(run_hook(root), "could not read HEAD")
 
     def test_fails_open_when_the_manifest_has_no_repository(self) -> None:
         root = make_cache_entry(self.directory, "0123456789ab", None)
 
-        self.assert_fails_open(run_hook(root))
+        self.assert_fails_open(run_hook(root), "no repository")
 
     def test_fails_open_when_the_plugin_is_not_a_cached_install(self) -> None:
         # --plugin-dir loads the source directory in place, named after the plugin
         root = make_cache_entry(self.directory, "mission", self.repository.as_posix())
 
-        self.assert_fails_open(run_hook(root))
+        self.assert_fails_open(run_hook(root), "not a cached install")
 
 
 class MatcherTest(unittest.TestCase):
