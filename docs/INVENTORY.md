@@ -89,6 +89,8 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 
 **Trava de chat novo no `ship-pr` (#30, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma medição, não uma repetição. Em 8 transcripts de missões de um projeto que usa o plugin, o `ship-pr` rodou no fim do chat da implementação, com 100k a 290k tokens de contexto, e reenviou esse contexto em cada uma das suas 36 a 95 chamadas. Num chat novo (cerca de 50k tokens fixos), cada missão custaria de 6% a 14% menos (10% em média). O `/clear` antes do `ship-pr` é hábito, e hábito falha; por isso vira hook do plugin, ao lado da skill que ele protege.
 
+**Aviso de plugin desatualizado (#32, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma observação. Depois do merge do #31, 4 dos 5 projetos que usam o plugin seguiam em versões antigas (`f845d1b`, `84b2bf3`), sem nenhum aviso. O `autoUpdate: false` é decisão (atualizar de propósito, revisando a mudança), então a peça é visibilidade, não atualização: um hook `SessionStart` que compara a versão instalada com a publicada.
+
 ## 3. Configuração e testes do próprio harness
 
 | Peça | UAT | kit | Melhor | Cat. | Fase |

@@ -8,6 +8,7 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
 | `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
 | `reviewer` agent | `mission:reviewer`, called by `close-mission` | Reviews the mission diff against its issue and against what no automated gate covers |
 | Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |
+| Version check (hook) | Runs by itself when Claude Code starts | Warns when the installed plugin is not the published one; see [Updates](#updates) |
 
 The plugin is the same for every project: it carries no per-project variables. It names **contracts**, and each project declares the real command or value behind each contract in its own rules, as described below. The skills and the reviewer are written in Brazilian Portuguese, the language of the rules of the projects that use them.
 
@@ -127,6 +128,17 @@ claude plugin update mission@brunoccalmeida-plugins
 ```text
 /plugin marketplace update brunoccalmeida-plugins
 ```
+
+### Warning when the plugin is outdated
+
+Manual updates drift: after one merge, 4 of the 5 projects using the plugin were still on older versions, and nothing said so ([#32](https://github.com/brunoccalmeida/automation-template/issues/32)). Turning auto-update on would hide that drift instead of fixing it, since reviewing what changed is the point of updating on purpose. So the plugin makes the drift visible and leaves the update to you: a [`SessionStart`](https://code.claude.com/docs/en/hooks.md#sessionstart) hook ([`scripts/check-plugin-version.sh`](scripts/check-plugin-version.sh)) compares the installed version with the published one when Claude Code starts and, when they differ, shows both SHAs and the update command.
+
+- **Installed version:** the name of the plugin's cache directory, which `${CLAUDE_PLUGIN_ROOT}` points at. With no `version` in the manifest, it is the marketplace commit SHA shortened to 12 characters ([How Claude Code computes the version](https://code.claude.com/docs/en/plugins/loading.md#how-claude-code-computes-the-version)).
+- **Published version:** `HEAD` of the manifest's `repository`, read with `git ls-remote`, which needs no model and no GitHub API. It assumes the plugin lives in the marketplace repository it names, as this one does. A merge that touches only documentation also moves `HEAD`, and then `claude plugin update` really does install a new version, so the warning is accurate.
+- **Shown to you, not to Claude:** the warning is a `systemMessage`, the "warning message shown to the user"; plain stdout and `additionalContext` from `SessionStart` enter Claude's context ([Hooks reference, SessionStart](https://code.claude.com/docs/en/hooks.md#sessionstart)) and would cost tokens every session.
+- **Startup only:** the matcher is `startup`. The loaded version only changes when Claude Code launches, so `/clear`, resume and compaction never run it.
+- **It fails open.** Offline, no `git`, no `repository` in the manifest, or a plugin loaded in place with `--plugin-dir` (its directory is not named after a commit): nothing is shown, and the reason goes to stderr, readable with debug logging ([Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0)).
+- **It costs at most 10 seconds, usually under one.** "Claude's first response still waits for the hooks to finish" ([Hooks reference, SessionStart](https://code.claude.com/docs/en/hooks.md#sessionstart)), so the hook's `timeout` is 10 seconds. Measured on Windows: `git ls-remote` to GitHub took 0.5 to 0.75 s, and a host that does not resolve failed in about 5 s. Only a connection that hangs without answering reaches the timeout.
 
 ## Track the adoption from this repository
 
