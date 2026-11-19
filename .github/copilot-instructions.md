@@ -10,12 +10,12 @@ Template [Copier](https://copier.readthedocs.io/) para projetos de automação d
 
 ## Contratos
 
-Valores que o plugin [`mission`](../plugins/mission/README.md) usa neste repositório (formato no README do plugin). O artefato publicado hoje é o próprio plugin, então `check` e `test` são a validação dele até a Missão 1 (#2) trazer os testes do template.
+Valores que o plugin [`mission`](../plugins/mission/README.md) usa neste repositório (formato no README do plugin). O artefato publicado hoje é o próprio plugin, então `check` é a validação dele e `test`, os testes dos seus hooks, até a Missão 1 (#2) trazer os testes do template.
 
 | Contrato | Valor |
 | --- | --- |
 | `check` | `npm ci --prefix .github/tools/claude-cli` uma vez, depois `python3 .github/scripts/validate_plugins.py` (no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
-| `test` | o mesmo que `check` |
+| `test` | `python3 -m unittest discover -s tests` (testes dos hooks do plugin; no Windows, `python` ou `py -3`, com o `sh` do Git Bash no `PATH`) |
 | `main-branch` | `main` |
 | `gate` | `ci-passed` |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |

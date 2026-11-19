@@ -87,6 +87,8 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 | "Ignore o que X já impõe" | Lista de ferramentas por stack | Contrato `check` + `REVIEW.md` | Agnóstico |
 | Afirmação sobre ferramenta externa cita a fonte | Só tpl | **tpl** | Todas as regras proíbem citar de memória |
 
+**Trava de chat novo no `ship-pr` (#30, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma medição, não uma repetição. Em 8 transcripts de missões de um projeto que usa o plugin, o `ship-pr` rodou no fim do chat da implementação, com 100k a 290k tokens de contexto, e reenviou esse contexto em cada uma das suas 36 a 95 chamadas. Num chat novo (cerca de 50k tokens fixos), cada missão custaria de 6% a 14% menos (10% em média). O `/clear` antes do `ship-pr` é hábito, e hábito falha; por isso vira hook do plugin, ao lado da skill que ele protege.
+
 ## 3. Configuração e testes do próprio harness
 
 | Peça | UAT | kit | Melhor | Cat. | Fase |

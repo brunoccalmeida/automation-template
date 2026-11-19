@@ -51,6 +51,23 @@ jobs:
           .github/tools/claude-cli/node_modules/.bin/claude --version
           python3 .github/scripts/validate_plugins.py
 
+  # Behavior of the plugin's hooks: each test runs the command the plugin's
+  # hooks.json declares, through sh, on synthetic transcripts. Standard
+  # library only, on the runner's python3; Ubuntu's sh is dash, which keeps
+  # the hook script to POSIX sh.
+  test-plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Test the plugin hooks
+        run: python3 -m unittest discover -s tests -v
+
   # The single required check of the ruleset on main (contract `gate`).
   # Requiring each job by name would mean editing the ruleset whenever a job
   # is added or renamed; this job's name never changes. always(): a required
@@ -62,7 +79,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [validate-plugins]
+    needs: [validate-plugins, test-plugins]
     if: ${{ always() }}
 
     steps:
