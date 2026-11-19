@@ -1,5 +1,17 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/check-plugin-version.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "UserPromptExpansion": [
       {
         "matcher": "^mission:ship-pr$",
