@@ -2,7 +2,8 @@
 name: reviewer
 description: Revisa o diff de uma missão contra a issue que o originou e contra o que nenhum portão automático cobre. Use uma vez por missão, depois de implementar e antes de abrir o PR, passando o caminho de um arquivo com o texto da issue e o de um arquivo com o diff.
 tools: Read, Grep, Glob
-model: inherit
+model: opus
+effort: high
 ---
 
 <!-- LTeX: language=pt-BR -->

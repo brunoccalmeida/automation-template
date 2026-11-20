@@ -3,6 +3,7 @@ name: ship-pr
 description: Liga o auto-merge (squash) de um PR na branch principal, preso ao SHA da head, e espera o resultado; quem decide é o ruleset. Só o usuário dispara, porque o merge é decisão humana.
 disable-model-invocation: true
 argument-hint: '[pr-number]'
+model: opus
 ---
 
 <!-- LTeX: language=pt-BR -->
