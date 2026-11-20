@@ -4,7 +4,7 @@ Eval suites for the plugin, run with [`claude plugin eval`](https://code.claude.
 
 ## `research/`: which model the `researcher` agent runs on
 
-Five documentation questions about Claude Code. Each answer was fixed before any run, quoted from the official page, and lives only in the case's graders, which the agent under test cannot read. Each case has four graders:
+Five documentation questions about Claude Code. Each answer was fixed before any run, quoted from the official page (one was corrected after the first runs, see [Writing a gold answer](#writing-a-gold-answer)), and lives only in the case's graders, which the agent under test cannot read. Each case has four graders:
 
 | Grader | Type | Passes when |
 | --- | --- | --- |
