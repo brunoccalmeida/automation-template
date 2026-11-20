@@ -63,6 +63,7 @@ Contexto longo degrada a qualidade; cada chat cuida de **uma missão** (uma GitH
 - Não repita o que lint/testes já impõem; regra sem exceção vira teste ou hook, não ênfase.
 - Filtre saídas na origem (`grep`, `head`, `--jq`, `gh run view --log-failed`); documentação web por seção, nunca a página inteira.
 - Subagente só com motivo: trabalho paralelo independente, saída volumosa ou revisor independente.
+- Busca ampla e leitura de documentação vão para o `mission:researcher`, que devolve fatos citados; decisão, diagnóstico e revisão ficam na sessão principal e no `mission:reviewer` ([roteamento de modelos](../plugins/mission/README.md#model-routing)).
 - Modelo e esforço fixos durante o chat (trocar invalida o cache).
 
 ## Espere o estado ficar pronto antes de agir

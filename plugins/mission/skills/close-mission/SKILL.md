@@ -1,6 +1,7 @@
 ---
 name: close-mission
 description: Definition of Done da missão do chat. Use quando a implementação estiver pronta, antes do revisor e do PR, sem esperar o usuário pedir.
+model: inherit
 ---
 
 <!-- LTeX: language=pt-BR -->

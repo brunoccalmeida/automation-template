@@ -7,6 +7,7 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
 | `close-mission` skill | `/mission:close-mission`, or Claude when the implementation is ready | Definition of Done: gates green, issues up to date, session summary, reviewer, pull request carrying the mission record |
 | `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
 | `reviewer` agent | `mission:reviewer`, called by `close-mission` | Reviews the mission diff against its issue and against what no automated gate covers |
+| `researcher` agent | `mission:researcher`, called by the main session | Answers a factual question from the official documentation, with quotes and URLs; the decision stays with the caller |
 | Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |
 | Version check (hook) | Runs by itself when Claude Code starts | Warns when the installed plugin is not the published one; see [Updates](#updates) |
 
@@ -77,6 +78,23 @@ A habit fails, so the plugin enforces it with a [`UserPromptExpansion`](https://
 - **It guards cost, not safety, so it fails open.** A missing or unreadable transcript allows the command and says why on stderr. With exit code 0, that stderr never reaches Claude; read it with debug logging ([Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0): "Claude never sees stderr from a hook that exits 0. To read it yourself [...] enable debug logging").
 - **It needs `sh`, `grep` and `sed`**, present on macOS and Linux and in Git Bash, which runs plugin hooks on Windows. On Windows without Git Bash, hooks run in PowerShell ([Exec form and shell form](https://code.claude.com/docs/en/hooks.md#exec-form-and-shell-form)), `sh` is not found, and the hook fails open: `ship-pr` runs, unguarded.
 - **Resuming a wait counts as prior conversation.** If a `ship-pr` wait was interrupted, `/clear` and run `/mission:ship-pr <n>` again; the skill reads the real state of the pull request first.
+
+## Model routing
+
+Each piece declares the model it runs on, so its quality does not depend on whichever model the session happens to use. The criterion is the cost of a **silent** error, not the size of the task: a cheaper model fits work whose mistakes a gate catches (a test, CI, a failing command) or whose output is only evidence for a stronger model's decision. Decisions, root-cause diagnosis and review stay on the strongest model. When the evidence does not settle it, the stronger model wins.
+
+The main session is not routed: it keeps one model and effort for the whole chat, because prompt caching is per model and switching models mid-chat throws the cache away ([Model configuration](https://code.claude.com/docs/en/model-config.md), [Manage costs](https://code.claude.com/docs/en/costs.md)). Routing therefore lives in subagents, which have their own context, and in skills that start a fresh chat.
+
+| Piece | `model` | `effort` | Why |
+| --- | --- | --- | --- |
+| `reviewer` agent | `opus` | `high` | Its findings are the last check before the pull request; a missed defect is silent. `high` is the documented level for "work where verification matters or edge cases are likely" ([Choose an effort level](https://code.claude.com/docs/en/model-config.md#choose-an-effort-level)). Before, it was `inherit`, so a session on a smaller model got a weaker review |
+| `researcher` agent | `sonnet` | `medium` | Its answer is evidence for the caller's decision, not the decision, and it must quote the page and give the URL, so a wrong fact can be checked. Measured on 5 documentation questions, 3 runs each, with the orchestrator and the judge pinned: Sonnet scored 1.000, the same as Opus, at about half the researcher's cost (US$ 0.99 against US$ 2.14 for the 15 runs); Haiku scored 0.983 (in one run it fetched an outdated docs URL instead of the official page), so the decision rule kept it out ([`evals/`](evals/README.md), [#34](https://github.com/brunoccalmeida/automation-template/issues/34)) |
+| `close-mission` skill | `inherit` | (session) | It runs in the main session, where a skill's `model` "applies for the rest of the current turn" ([Skills, frontmatter reference](https://code.claude.com/docs/en/skills.md#frontmatter-reference)): any other value would switch the session's model and discard its cache |
+| `ship-pr` skill | `opus` | (session) | It runs in a fresh chat, so a cheaper model would lose no cache, but it also resolves `DIRTY` by merging, where a wrong conflict resolution is silent. It stays on the strongest model until a measurement shows a cheaper one does as well ([#35](https://github.com/brunoccalmeida/automation-template/issues/35)) |
+
+Subagent model precedence: the per-invocation `model` parameter, then the `model` field, then `CLAUDE_CODE_SUBAGENT_MODEL`, then the parent's model ([Choose a model](https://code.claude.com/docs/en/sub-agents.md#choose-a-model)). So a caller that passes `model` on the Agent call overrides this table; the plugin's skills never do. `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` also overrides it, for every subagent.
+
+The researcher's model was chosen by measurement, not assumed: see [`evals/`](evals/README.md).
 
 ## Install in a project
 
