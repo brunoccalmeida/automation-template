@@ -68,4 +68,4 @@ if [ "$installed" = "$published" ]; then
   exit 0
 fi
 
-printf '{"systemMessage":"%s"}\n' "Plugin mission desatualizado: instalado $installed, publicado $published. Para atualizar, rode no shell claude plugin update mission@brunoccalmeida-plugins e depois /reload-plugins (ou abra uma sessão nova)."
+printf '{"systemMessage":"%s"}\n' "Plugin mission desatualizado: instalado $installed, publicado $published. Para atualizar, rode no shell claude plugin update mission@brunoccalmeida-plugins. O 'Restart to apply changes' que ele mostra no fim quer dizer: rode /reload-plugins nesta sessão ou abra uma sessão nova; até lá, a sessão aberta segue com a versão antiga."

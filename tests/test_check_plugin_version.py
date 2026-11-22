@@ -147,6 +147,21 @@ class CheckPluginVersionTest(unittest.TestCase):
         self.assertIn(self.published[:12], message)
         self.assertIn(UPDATE_COMMAND, message)
 
+    def test_warning_says_what_the_update_restart_means(self) -> None:
+        # The update ends with the CLI's "Restart to apply changes", the last
+        # message the reader sees, and it does not say what to restart: the
+        # open session keeps its loaded version until /reload-plugins or a
+        # new session (CLI reference, "plugin update"; issue #25)
+        root = make_cache_entry(self.directory, "0123456789ab", self.repository.as_posix())
+
+        run = run_hook(root)
+
+        self.assertNotEqual(run.stdout.strip(), "", f"no warning printed; stderr: {run.stderr}")
+        message = json.loads(run.stdout)["systemMessage"]
+        self.assertIn("Restart to apply changes", message)
+        self.assertIn("/reload-plugins", message)
+        self.assertIn("sessão nova", message)
+
     def test_is_silent_when_the_installed_version_is_the_published_one(self) -> None:
         root = make_cache_entry(self.directory, self.published[:12], self.repository.as_posix())
 
