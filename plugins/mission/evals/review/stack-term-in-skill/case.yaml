@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: stack-term-in-skill
+context:
+  scaffold_script: scaffold.sh
