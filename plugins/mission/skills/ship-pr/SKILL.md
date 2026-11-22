@@ -36,8 +36,12 @@ Quem decide se pode integrar é o **ruleset** da `main-branch` (check `gate` ver
    - `OPEN false` (auto-merge desligado, por exemplo por head nova ou `BEHIND`): volte ao passo 2.
    - `CLOSED` (PR fechado sem merge): pare e reporte; não reabra nem tente integrar.
    - `timeout`: reporte o último estado. Um check obrigatório além do `gate`, pendente ou falho, também segura o merge e termina aqui: nomeie-o com `gh pr checks <n>`.
-5. Confirme `MERGED` (`gh pr view <n> --json state`) e só então `git switch <main-branch>`, `git pull --ff-only` e apague a branch local integrada.
+5. Confirme `MERGED` (`gh pr view <n> --json state`) e só então `git switch <main-branch>`, `git pull --ff-only` e apague a branch local integrada. Este chat é o único que vê o merge, então feche a missão aqui:
+   - **Issues fechadas:** liste as que o PR fecha com `gh pr view <n> --json closingIssuesReferences --jq '.closingIssuesReferences[].url'` (inclui as de outro repositório) e confira cada uma com `gh issue view <url> --json state`. O GitHub fecha as issues depois do merge, de forma assíncrona: issue ainda `OPEN`, leia de novo a cada 10 s até fechar, por no máximo 2 min; persistindo, reporte ao usuário, sem fechar à mão.
+   - **Issues citadas sem fechar:** leia o corpo (`gh pr view <n> --json body`) e confira o estado de cada issue que ele cita fora daquela lista. Lista vazia, ou issue citada ainda `OPEN`, é aviso ao usuário, que decide se o PR devia tê-la fechado: nenhuma palavra de fechamento chegou a ela (em outro repositório, só `Closes owner/repo#N` fecha). Foi o caso do kit#51, que fechou só kit#50 e citava automation-template#15 apenas como link.
+   - **Fato surgido no merge** (ex.: check intermitente, `BEHIND` repetido) vira issue e entra no resumo da próxima missão, não em PR novo.
+   - Avise que a missão terminou e que o próximo chat pode começar.
 6. Prazo esgotado ou falha, com o usuário possivelmente ausente: avise também com `PushNotification`, se a ferramenta existir.
 7. Espera interrompida (notificada como parada, ou a sessão reaberta): leia primeiro o estado real (`gh pr view <n> --json state,autoMergeRequest,mergeStateStatus`), conte ao usuário e só então retome do passo adequado; nunca presuma que a espera continua.
 
-**Limite:** tarefas em segundo plano morrem com a sessão, e nada acorda uma sessão fechada. O auto-merge segue no GitHub, mas ninguém reporta: a próxima mensagem ou chat começa pelo passo 7.
+**Limite:** tarefas em segundo plano morrem com a sessão, e nada acorda uma sessão fechada. O auto-merge segue no GitHub, mas ninguém reporta. Para retomar pelo passo 7, mande uma mensagem comum neste chat, ou `/clear` e `/mission:ship-pr <n>` como primeira mensagem do chat novo: digitado de novo num chat que já tem conversa, o comando é bloqueado pelo plugin.

@@ -16,4 +16,3 @@ Verificações próprias deste repositório, lidas pelo `mission:reviewer` além
 ## Não reporte
 
 - O que `validate-plugins` já impõe (manifesto, frontmatter, campos das skills e dos agentes).
-- Isolamento de testes: este repositório ainda não tem suíte além da validação do plugin.

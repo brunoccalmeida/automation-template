@@ -31,6 +31,17 @@ TIMEOUT_SECONDS = 30
 UPDATE_COMMAND = "claude plugin update mission@brunoccalmeida-plugins"
 
 
+def setUpModule() -> None:
+    """Fail, never skip, when a tool the hooks need is missing.
+
+    The ``test`` contract lists these tools as preconditions; skipping would
+    print OK without testing the hooks, an error passing in silence.
+    """
+    missing = [name for name, path in (("sh", SH), ("git", GIT)) if path is None]
+    if missing:
+        raise RuntimeError(f"not found on PATH: {', '.join(missing)}; the hook tests run the hooks through them")
+
+
 def session_start_hooks() -> list[dict]:
     """The SessionStart matcher groups the plugin declares."""
     config = json.loads(HOOKS_FILE.read_text(encoding="utf-8"))
@@ -102,7 +113,6 @@ def run_hook(plugin_root: Path) -> subprocess.CompletedProcess:
     )
 
 
-@unittest.skipIf(SH is None or GIT is None, "sh or git not found on PATH")
 class CheckPluginVersionTest(unittest.TestCase):
     def setUp(self) -> None:
         # A space in the path proves the command keeps it one argument

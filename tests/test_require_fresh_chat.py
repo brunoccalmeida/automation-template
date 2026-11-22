@@ -24,6 +24,18 @@ HOOKS_FILE = PLUGIN_ROOT / "hooks" / "hooks.json"
 SH = shutil.which("sh")
 TIMEOUT_SECONDS = 30
 
+
+def setUpModule() -> None:
+    """Fail, never skip, when a tool the hooks need is missing.
+
+    The ``test`` contract lists these tools as preconditions; skipping would
+    print OK without testing the hooks, an error passing in silence.
+    """
+    missing = [name for name, path in (("sh", SH),) if path is None]
+    if missing:
+        raise RuntimeError(f"not found on PATH: {', '.join(missing)}; the hook tests run the hooks through them")
+
+
 # A chat that /clear just opened: what Claude Code writes before the first
 # prompt of the new session reaches the model
 FRESH_CHAT = [
@@ -86,7 +98,6 @@ def ship_pr_input(transcript: Path | str | None) -> dict:
     return hook_input
 
 
-@unittest.skipIf(SH is None, "sh not found on PATH")
 class RequireFreshChatTest(unittest.TestCase):
     def setUp(self) -> None:
         # A space in the path proves the command keeps it one argument

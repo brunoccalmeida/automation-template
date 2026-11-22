@@ -15,7 +15,7 @@ Valores que o plugin [`mission`](../plugins/mission/README.md) usa neste reposit
 | Contrato | Valor |
 | --- | --- |
 | `check` | `npm ci --prefix .github/tools/claude-cli` uma vez, depois `python3 .github/scripts/validate_plugins.py` (no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
-| `test` | `python3 -m unittest discover -s tests` (testes dos hooks do plugin; no Windows, `python` ou `py -3`, com o `sh` do Git Bash no `PATH`) |
+| `test` | `python3 -m unittest discover -s tests` (testes dos hooks do plugin; precisam de `sh` e `git` no `PATH` e falham sem eles; no Windows, `python` ou `py -3`, com o Git Bash no `PATH`) |
 | `main-branch` | `main` |
 | `gate` | `ci-passed` |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |

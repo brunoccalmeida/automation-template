@@ -5,7 +5,7 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
 | Component | Invoke | What it does |
 | --- | --- | --- |
 | `close-mission` skill | `/mission:close-mission`, or Claude when the implementation is ready | Definition of Done: gates green, issues up to date, session summary, reviewer, pull request carrying the mission record |
-| `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
+| `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA, waits for the outcome, then confirms the issues the pull request closes and ends the mission |
 | `reviewer` agent | `mission:reviewer`, called by `close-mission` | Reviews the mission diff against its issue and against what no automated gate covers |
 | `researcher` agent | `mission:researcher`, called by the main session | Answers a factual question from the official documentation, with quotes and URLs; the decision stays with the caller |
 | Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |

@@ -52,9 +52,11 @@ jobs:
           python3 .github/scripts/validate_plugins.py
 
   # Behavior of the plugin's hooks: each test runs the command the plugin's
-  # hooks.json declares, through sh, on synthetic transcripts. Standard
-  # library only, on the runner's python3; Ubuntu's sh is dash, which keeps
-  # the hook script to POSIX sh.
+  # hooks.json declares, through sh, on synthetic inputs (transcripts, and a
+  # cache entry whose repository is a local git repository). Standard library
+  # only, on the runner's python3; the tests need sh and git and fail, never
+  # skip, without them. Ubuntu's sh is dash, which keeps the hook scripts to
+  # POSIX sh.
   test-plugins:
     runs-on: ubuntu-latest
     timeout-minutes: 5
