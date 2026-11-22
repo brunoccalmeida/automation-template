@@ -52,7 +52,8 @@ No shell is granted (`Agent`, `Read`, `Grep`, `Glob`), so it runs on native Wind
 
 1. Before and after, 3 runs per case, same pinned orchestrator and judge.
 2. A change is adopted only if `finds-planted-defect` and `no-invented-findings` pass rates are each **not lower** than the baseline's. Cost (`costUsd`) only breaks ties among changes that pass this test.
-3. A run that ends in error counts as failed. A clean case that fails in every run of every arm points at the case (a real defect in a merged mission), not at the reviewer: read the findings, and if one holds, add it to the case's known defects, open a `reviewer-miss` issue if it is still on the main branch, and record it here.
+3. A run that ends in error counts as failed.
+4. **Every `no-invented-findings` failure, in any arm, is read before scoring.** The known-defect lists came from the baseline reviewer's own runs, so a finding outside them may be a real defect no one listed yet, and scoring it as false would reward agreeing with the baseline model instead of being right (Goodhart). A finding that holds when checked against the code makes the run a pass and joins the case's list; if it is still on the main branch, it goes to a `reviewer-miss` issue. Record each decision here.
 
 ### Graders were seen failing (review)
 

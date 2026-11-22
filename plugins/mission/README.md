@@ -74,7 +74,7 @@ Project-specific review checks go in `REVIEW.md` at the repository root, free-fo
 The reviewer is a gate, and a gate is trusted only after it is seen rejecting what it should. Its errors are therefore recorded, so a change to the reviewer (prompt, `REVIEW.md`, model) can be measured instead of guessed:
 
 - **Every mission records them.** `close-mission` writes the reviewer's findings into the pull request body in three lists, each saying "none" when empty: fixed, **false positives** (findings discarded, each with the reason) and **false negatives** (defects the reviewer let through although its checklist or `REVIEW.md` covered them).
-- **A defect found after a merge gets the `reviewer-miss` label.** The issue (or pull request) that fixes it carries the label and links the pull request of the mission that shipped the defect. Create the label in the project; each `reviewer-miss` is a candidate for a new eval case.
+- **A defect found after a merge gets the `reviewer-miss` label.** The issue (or pull request) that fixes it carries the label and links the pull request of the mission that shipped the defect, whether the current mission fixes it or opens it as a new issue. Create the label in the project; each `reviewer-miss` is a candidate for a new eval case.
 - **The reviewer reads the commit messages.** `close-mission` hands it the branch's commit messages followed by the diff, because the reviewer checks there how the RED was seen and has no shell to run `git log`.
 
 The answer key built from these records lives in [`evals/review/`](evals/README.md#review-whether-the-reviewer-finds-what-it-should): real merged missions, some with one planted defect and some clean.
