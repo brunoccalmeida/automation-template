@@ -1,0 +1,506 @@
+commit (mission branch)
+
+feat(mission): block /mission:ship-pr unless it is the first message of a fresh chat (#31)
+
+Closes #30
+
+## What
+
+A `UserPromptExpansion` hook shipped with the `mission` plugin blocks
+`/mission:ship-pr` when the chat already has conversation, telling the
+user to `/clear` and run it again as the first message. A fresh chat has
+no assistant record in its transcript, so the command passes.
+
+- `plugins/mission/hooks/hooks.json`: matcher `^mission:ship-pr$`,
+shell-form command `sh
+"${CLAUDE_PLUGIN_ROOT}/scripts/require-fresh-chat.sh"`, timeout 10 s
+- `plugins/mission/scripts/require-fresh-chat.sh`: reads
+`transcript_path`, blocks on any `"type":"assistant"` record, fails open
+(exit 0 + stderr) when the path is absent or the transcript unreadable
+- `tests/test_require_fresh_chat.py` + CI job `test-plugins` (in the
+`ci-passed` needs); contract `test` now runs these tests
+- Plugin README ("Ship in a fresh chat"), `close-mission` step 6 asks
+for `/clear` before `ship-pr`, INVENTORY evidence entry, session summary
+
+## Decisions
+
+- **`UserPromptExpansion`, not `PreToolUse` on `Skill`:** typing
+`/skillname` bypasses `PreToolUse`; `ship-pr` has
+`disable-model-invocation: true`, so the typed path is the only one.
+- **Anchored matcher:** a matcher with `:` is evaluated as an
+*unanchored* JavaScript regex, so `mission:ship-pr` alone would also
+match `mission:ship-pr-later` or `other:mission:ship-pr`.
+- **Detection = any top-level `"type":"assistant"` record.** Checked on
+real transcripts: `/clear` opens a new file holding only `mode`,
+`session-owner`, `user` (the `/clear` itself) and `system` records.
+Quoted text inside a message is JSON-escaped (`\"type\":\"assistant\"`),
+so it never matches. The transcript may lag the *current* turn, but
+earlier turns, the ones that matter, are already written.
+- **POSIX `sh` + `grep` + `sed`, no `jq`/Python/Node:** the plugin runs
+in projects of any stack; `jq` is not on every Windows machine. Tested
+under dash (Debian) and Git Bash.
+- **Shell form with the placeholder quoted, not exec form:** on Windows,
+exec form needs a real `.exe` resolvable on `PATH`, and Git's `sh.exe`
+usually is not; shell form runs in Git Bash. Without Git Bash, hooks run
+in PowerShell, `sh` is not found, and the hook fails open (documented).
+- **Fail open:** it guards cost, not safety.
+- **"Plugin version bumped":** no `version` added. The manifest omits it
+on purpose ([ADR
+0004](docs/adr/0004-partial-resumption-with-a-plugin.md), item 7), so
+each install is pinned to a commit SHA and `/plugin marketplace update`
+/ `claude plugin update` moves it to this one. Adding a version would
+pin consumers and contradict the ADR.
+- **Block message in pt-BR**, like the skills it guards.
+
+## Sources
+
+- Hooks reference:
+[UserPromptExpansion](https://code.claude.com/docs/en/hooks.md#userpromptexpansion)
+(input with `command_name: "my-plugin:example-skill"`, `decision:
+"block"` + `reason` shown to the user), [Matcher
+patterns](https://code.claude.com/docs/en/hooks.md#matcher-patterns),
+[Exec form and shell
+form](https://code.claude.com/docs/en/hooks.md#exec-form-and-shell-form),
+[Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0),
+common input fields (`transcript_path` may lag the current turn)
+- Plugin manifest reference:
+[hooks](https://code.claude.com/docs/en/plugins-reference.md#hooks),
+[Environment variables, quoting and path
+separators](https://code.claude.com/docs/en/plugins-reference.md#quoting-and-path-separators)
+
+## How RED was seen
+
+- **RED:** `python -m unittest discover -s tests` before the hook
+existed → `FAILED (errors=8, skipped=1)`, `FileNotFoundError:
+...plugins\mission\hooks\hooks.json`.
+- **Mutations** (each reverted, then green again):
+- unanchored matcher → `test_does_not_match_other_commands` fails for
+`mission:ship-pr-later` and `other:mission:ship-pr`
+- `grep -q 'assistant'` →
+`test_quoted_assistant_text_in_a_user_message_does_not_block` fails
+(block printed)
+- JSON unescape removed (Linux, `python:3.13-slim`) →
+`test_reads_a_path_with_json_escapes` fails: `no decision printed;
+stderr: require-fresh-chat: transcript not readable as a file:
+.../back\slash \"quote\"/transcript.jsonl; allowing`
+- **End to end** with the pinned CLI 2.1.326, `-p --plugin-dir
+./plugins/mission`:
+- chat with prior conversation (`--resume`), `/mission:ship-pr 999` →
+`UserPromptExpansion operation blocked by hook:` + the message
+- fresh chat, `/mission:ship-pr 999` → the skill expanded and the model
+started following it (stopped only because shell tools were disallowed
+on purpose)
+  - plain prompt in the chat with conversation → answered normally
+- **Gates:** `check` → `OK: no error and no warning beyond the omitted
+version` (the validator lists the hook); `test` → `OK` (9 on Linux; 1
+skipped on Windows, where a file name cannot hold `\`). The new
+`test-plugins` job is enforced by the existing "Require the gate to need
+every job" step.
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ .github/copilot-instructions.md               |   4 +-
+ .github/workflows/ci.yml                      |  19 ++-
+ docs/INVENTORY.md                             |   2 +
+ docs/PROJECT_SESSION_SUMMARY.md               |   7 +-
+ plugins/mission/README.md                     |  13 +-
+ plugins/mission/hooks/hooks.json              |  16 +++
+ plugins/mission/scripts/require-fresh-chat.sh |  50 ++++++++
+ plugins/mission/skills/close-mission/SKILL.md |   2 +-
+ tests/test_require_fresh_chat.py              | 173 ++++++++++++++++++++++++++
+ 9 files changed, 278 insertions(+), 8 deletions(-)
+
+diff --git a/.github/copilot-instructions.md b/.github/copilot-instructions.md
+index 1f8472b..d751d6c 100644
+--- a/.github/copilot-instructions.md
++++ b/.github/copilot-instructions.md
+@@ -10,12 +10,12 @@ Template [Copier](https://copier.readthedocs.io/) para projetos de automação d
+ 
+ ## Contratos
+ 
+-Valores que o plugin [`mission`](../plugins/mission/README.md) usa neste repositório (formato no README do plugin). O artefato publicado hoje é o próprio plugin, então `check` e `test` são a validação dele até a Missão 1 (#2) trazer os testes do template.
++Valores que o plugin [`mission`](../plugins/mission/README.md) usa neste repositório (formato no README do plugin). O artefato publicado hoje é o próprio plugin, então `check` é a validação dele e `test`, os testes dos seus hooks, até a Missão 1 (#2) trazer os testes do template.
+ 
+ | Contrato | Valor |
+ | --- | --- |
+ | `check` | `npm ci --prefix .github/tools/claude-cli` uma vez, depois `python3 .github/scripts/validate_plugins.py` (no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
+-| `test` | o mesmo que `check` |
++| `test` | `python3 -m unittest discover -s tests` (testes dos hooks do plugin; no Windows, `python` ou `py -3`, com o `sh` do Git Bash no `PATH`) |
+ | `main-branch` | `main` |
+ | `gate` | `ci-passed` |
+ | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 4ff218e..4e0e3fa 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -51,6 +51,23 @@ jobs:
+           .github/tools/claude-cli/node_modules/.bin/claude --version
+           python3 .github/scripts/validate_plugins.py
+ 
++  # Behavior of the plugin's hooks: each test runs the command the plugin's
++  # hooks.json declares, through sh, on synthetic transcripts. Standard
++  # library only, on the runner's python3; Ubuntu's sh is dash, which keeps
++  # the hook script to POSIX sh.
++  test-plugins:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
++        with:
++          persist-credentials: false
++
++      - name: Test the plugin hooks
++        run: python3 -m unittest discover -s tests -v
++
+   # The single required check of the ruleset on main (contract `gate`).
+   # Requiring each job by name would mean editing the ruleset whenever a job
+   # is added or renamed; this job's name never changes. always(): a required
+@@ -62,7 +79,7 @@ jobs:
+   ci-passed:
+     runs-on: ubuntu-latest
+     timeout-minutes: 5
+-    needs: [validate-plugins]
++    needs: [validate-plugins, test-plugins]
+     if: ${{ always() }}
+ 
+     steps:
+diff --git a/docs/INVENTORY.md b/docs/INVENTORY.md
+index 9e4319d..a1a6b23 100644
+--- a/docs/INVENTORY.md
++++ b/docs/INVENTORY.md
+@@ -87,6 +87,8 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
+ | "Ignore o que X já impõe" | Lista de ferramentas por stack | Contrato `check` + `REVIEW.md` | Agnóstico |
+ | Afirmação sobre ferramenta externa cita a fonte | Só tpl | **tpl** | Todas as regras proíbem citar de memória |
+ 
++**Trava de chat novo no `ship-pr` (#30, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma medição, não uma repetição. Em 8 transcripts de missões de um projeto que usa o plugin, o `ship-pr` rodou no fim do chat da implementação, com 100k a 290k tokens de contexto, e reenviou esse contexto em cada uma das suas 36 a 95 chamadas. Num chat novo (cerca de 50k tokens fixos), cada missão custaria de 6% a 14% menos (10% em média). O `/clear` antes do `ship-pr` é hábito, e hábito falha; por isso vira hook do plugin, ao lado da skill que ele protege.
++
+ ## 3. Configuração e testes do próprio harness
+ 
+ | Peça | UAT | kit | Melhor | Cat. | Fase |
+diff --git a/docs/PROJECT_SESSION_SUMMARY.md b/docs/PROJECT_SESSION_SUMMARY.md
+index 297da96..d0f1670 100644
+--- a/docs/PROJECT_SESSION_SUMMARY.md
++++ b/docs/PROJECT_SESSION_SUMMARY.md
+@@ -9,16 +9,17 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
+ | Item | Estado |
+ | --- | --- |
+ | Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). **Fila do plugin concluída:** A (#14), B (#15, kit), A.1 (#19, #20, #21), C1 (#22, nextjs), C2 (#23, UAT) e D (#17, este repositório) |
+-| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer`, em uso nos quatro projetos, incluindo este (instalado do GitHub, `autoUpdate: false`) |
++| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer` e a trava que só deixa o `ship-pr` rodar como primeira mensagem de um chat novo (hook `UserPromptExpansion`, #30), em uso nos quatro projetos, incluindo este (instalado do GitHub, `autoUpdate: false`) |
+ | Próxima missão | Nenhuma neste repositório: a prioridade é o plano de portfólio. O Copier (#2 a #11) espera o gatilho do [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) e da [Pausa](#pausa) |
+ | Fila | Documentação do plugin (P2): #25 (`/reload-plugins` após instalar pelo shell) e #26 (Copilot e o plugin) · Copier: #2 a #11, pausados |
+ | Pendência no kit | Atualizar o plugin e apagar a regra local de contorno do `DIRTY` (kit#52) |
++| Pendência nos projetos | Atualizar o plugin (`claude plugin update mission@brunoccalmeida-plugins`) no kit, no nextjs e no UAT para receber a trava de chat novo (#30); opcional, sem mudança de contrato |
+ | PRs abertos | nenhum após o merge |
+-| Portões | `ci-passed`, único check exigido pelo ruleset "Protect main" ([`.github/rulesets/`](../.github/rulesets/protect-main.json), #28): agrega `validate-plugins` (marketplace e cada plugin; reprova erro ou *warning*, menos o `version` omitido) e reprova se um job do workflow faltar no `needs` |
++| Portões | `ci-passed`, único check exigido pelo ruleset "Protect main" ([`.github/rulesets/`](../.github/rulesets/protect-main.json), #28): agrega `validate-plugins` (marketplace e cada plugin; reprova erro ou *warning*, menos o `version` omitido) e `test-plugins` (testes dos hooks do plugin, `tests/`), e reprova se um job do workflow faltar no `needs` |
+ | Ferramenta de CI | Claude Code CLI 2.1.326 fixado com lockfile em `.github/tools/claude-cli/`; subir de versão exige aprovar de novo o `postinstall` (`allowScripts` preso à versão) |
+ | Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos · [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) retomada parcial com plugin |
+ | Evidência | [INVENTORY.md](INVENTORY.md): peças dos projetos de origem classificadas (núcleo / pack / app); nextjs como terceira fonte e a comparação das quatro versões das peças do plugin |
+-| Armadilhas | Mudança no plugin é fechada pela versão publicada; a da branch se experimenta com `claude --plugin-dir ./plugins/mission`, e depois do merge, `claude plugin update mission@brunoccalmeida-plugins` (regras, Git). Plugin instalado pelo shell só carrega após `/reload-plugins` ou sessão nova (#25). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
++| Armadilhas | `/mission:ship-pr` só roda como primeira mensagem de um chat novo: `/clear` antes (#30). Mudança no plugin é fechada pela versão publicada; a da branch se experimenta com `claude --plugin-dir ./plugins/mission`, e depois do merge, `claude plugin update mission@brunoccalmeida-plugins` (regras, Git). Plugin instalado pelo shell só carrega após `/reload-plugins` ou sessão nova (#25). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
+ 
+ ## Plano de missões
+ 
+diff --git a/plugins/mission/README.md b/plugins/mission/README.md
+index bcf61cb..b7004b2 100644
+--- a/plugins/mission/README.md
++++ b/plugins/mission/README.md
+@@ -5,8 +5,9 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
+ | Component | Invoke | What it does |
+ | --- | --- | --- |
+ | `close-mission` skill | `/mission:close-mission`, or Claude when the implementation is ready | Definition of Done: gates green, issues up to date, session summary, reviewer, pull request carrying the mission record |
+-| `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
++| `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
+ | `reviewer` agent | `mission:reviewer`, called by `close-mission` | Reviews the mission diff against its issue and against what no automated gate covers |
++| Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |
+ 
+ The plugin is the same for every project: it carries no per-project variables. It names **contracts**, and each project declares the real command or value behind each contract in its own rules, as described below. The skills and the reviewer are written in Brazilian Portuguese, the language of the rules of the projects that use them.
+ 
+@@ -66,6 +67,16 @@ Project-specific review checks go in `REVIEW.md` at the repository root, free-fo
+ - Anything `tsc`, ESLint and Prettier already enforce.
+ ```
+ 
++## Ship in a fresh chat
++
++Run `/mission:ship-pr <n>` as the **first message of a new chat**: `/clear` first, in the chat that implemented the mission. `ship-pr` needs nothing from that conversation (the pull request body holds the mission record, and the session summary holds the state), but every tool call re-sends the whole context, and waiting for CI and the merge takes dozens of calls. Measured on 8 missions of a project that uses this plugin, a fresh chat would have cost about 10% less per mission (6 to 14%) ([#30](https://github.com/brunoccalmeida/automation-template/issues/30)).
++
++A habit fails, so the plugin enforces it with a [`UserPromptExpansion`](https://code.claude.com/docs/en/hooks.md#userpromptexpansion) hook ([`hooks/hooks.json`](hooks/hooks.json), [`scripts/require-fresh-chat.sh`](scripts/require-fresh-chat.sh)). That event fires when a typed slash command expands, the path a `PreToolUse` hook on `Skill` does not see. The hook reads the chat transcript and blocks the command, with a message saying to run `/clear`, when the transcript already holds an assistant reply. Other commands and plain prompts never reach it: its matcher is `^mission:ship-pr$`, anchored because a matcher with `:` is an unanchored regular expression ([Matcher patterns](https://code.claude.com/docs/en/hooks.md#matcher-patterns)).
++
++- **It guards cost, not safety, so it fails open.** A missing or unreadable transcript allows the command and says why on stderr. With exit code 0, that stderr never reaches Claude; read it with debug logging ([Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0): "Claude never sees stderr from a hook that exits 0. To read it yourself [...] enable debug logging").
++- **It needs `sh`, `grep` and `sed`**, present on macOS and Linux and in Git Bash, which runs plugin hooks on Windows. On Windows without Git Bash, hooks run in PowerShell ([Exec form and shell form](https://code.claude.com/docs/en/hooks.md#exec-form-and-shell-form)), `sh` is not found, and the hook fails open: `ship-pr` runs, unguarded.
++- **Resuming a wait counts as prior conversation.** If a `ship-pr` wait was interrupted, `/clear` and run `/mission:ship-pr <n>` again; the skill reads the real state of the pull request first.
++
+ ## Install in a project
+ 
+ From the project root, register the marketplace for everyone who clones the repository, install the plugin at project scope, and commit `.claude/settings.json`:
+diff --git a/plugins/mission/hooks/hooks.json b/plugins/mission/hooks/hooks.json
+new file mode 100644
+index 0000000..d247ce2
+--- /dev/null
++++ b/plugins/mission/hooks/hooks.json
+@@ -0,0 +1,16 @@
++{
++  "hooks": {
++    "UserPromptExpansion": [
++      {
++        "matcher": "^mission:ship-pr$",
++        "hooks": [
++          {
++            "type": "command",
++            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/require-fresh-chat.sh\"",
++            "timeout": 10
++          }
++        ]
++      }
++    ]
++  }
++}
+diff --git a/plugins/mission/scripts/require-fresh-chat.sh b/plugins/mission/scripts/require-fresh-chat.sh
+new file mode 100644
+index 0000000..bc90fff
+--- /dev/null
++++ b/plugins/mission/scripts/require-fresh-chat.sh
+@@ -0,0 +1,50 @@
++#!/bin/sh
++# UserPromptExpansion hook for /mission:ship-pr: block it unless it is the
++# first message of a fresh chat (after /clear), so the merge phase does not
++# re-send the context of the chat that implemented the mission on every tool
++# call (issue #30).
++#
++# A chat has prior conversation when its transcript holds an assistant
++# record. The transcript may lag the current turn (Hooks reference, common
++# input fields), but earlier turns are already written, and those are the
++# ones that matter here.
++#
++# It guards cost, not safety: anything unexpected allows the command and
++# says why on stderr. POSIX sh, grep and sed only, because the plugin runs in
++# projects of any stack, and on Windows through Git Bash.
++
++say() {
++  printf 'require-fresh-chat: %s\n' "$*" >&2
++}
++
++input=$(cat)
++
++# transcript_path from the hook input, JSON-unescaped. No jq: it is not on
++# every machine. The pattern matches the real key only: inside a JSON string
++# the quotes around a quoted key are escaped.
++transcript=$(printf '%s' "$input" | tr -d '\r\n' |
++  sed -nE 's/.*"transcript_path"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' |
++  sed -e 's/\\"/"/g' -e 's/\\\//\//g' -e 's/\\\\/\\/g')
++
++if [ -z "$transcript" ]; then
++  say "no transcript_path in the hook input; allowing"
++  exit 0
++fi
++if [ ! -f "$transcript" ] || [ ! -r "$transcript" ]; then
++  say "transcript not readable as a file: $transcript; allowing"
++  exit 0
++fi
++
++# Compact JSON, as Claude Code writes it. Quoted text inside a message is
++# escaped (\"type\":\"assistant\"), so it never matches.
++grep -q '"type":"assistant"' "$transcript"
++case $? in
++  0) ;;
++  1) exit 0 ;;
++  *)
++    say "could not read the transcript: $transcript; allowing"
++    exit 0
++    ;;
++esac
++
++printf '%s\n' '{"decision":"block","reason":"/mission:ship-pr roda só como primeira mensagem de um chat novo: este chat já tem conversa, e cada chamada de ferramenta da espera pelo merge reenviaria todo esse contexto. Rode /clear e depois /mission:ship-pr <n> de novo; o PR e o resumo de sessão guardam tudo que a skill precisa."}'
+diff --git a/plugins/mission/skills/close-mission/SKILL.md b/plugins/mission/skills/close-mission/SKILL.md
+index 8217489..6e9a153 100644
+--- a/plugins/mission/skills/close-mission/SKILL.md
++++ b/plugins/mission/skills/close-mission/SKILL.md
+@@ -12,5 +12,5 @@ Feche a missão; cada item é verificado, não presumido. Nomes em crases como `
+ 3. **Resumo de sessão** (`session-summary`), na branch da missão: só **estado**. Tabela com uma ideia por linha (a fila de PRs como ficará após o merge) e a próxima missão recomendada pela prioridade das regras, com links para issues e ADRs. Cite issues, não o número do PR (ele ainda não existe). Decisão duradoura vira regra ou ADR; armadilha que vai se repetir ganha uma linha no resumo. O histórico vai no PR (passo 6).
+ 4. **README e documentação** acompanham o que mudou para quem usa o projeto.
+ 5. **Revisor** (`mission:reviewer`): salve no scratchpad o diff completo (`git diff <main-branch>...HEAD`, resumo incluído) e o texto da issue (`gh issue view <n>`) e passe os dois caminhos. Corrija os achados que procedem e rode os portões de novo; registre os descartados com o porquê.
+-6. **PR com o registro da missão:** commit, push e `gh pr create` com `Closes #N`. O corpo do PR **é** o registro: decisões, fontes consultadas, como o RED foi visto (ou a mutação), achados do revisor (corrigidos e descartados, com o porquê). Se existir `.github/pull_request_template.md`, siga as seções dele (`gh pr create --body` ignora o modelo). O squash grava o corpo na `main-branch` só se o repositório usar a descrição do PR como mensagem: confira que `gh api repos/{owner}/{repo} --jq .squash_merge_commit_message` imprime `PR_BODY` e, se não, avise o usuário antes do merge. Peça ao usuário `/mission:ship-pr <n>`.
++6. **PR com o registro da missão:** commit, push e `gh pr create` com `Closes #N`. O corpo do PR **é** o registro: decisões, fontes consultadas, como o RED foi visto (ou a mutação), achados do revisor (corrigidos e descartados, com o porquê). Se existir `.github/pull_request_template.md`, siga as seções dele (`gh pr create --body` ignora o modelo). O squash grava o corpo na `main-branch` só se o repositório usar a descrição do PR como mensagem: confira que `gh api repos/{owner}/{repo} --jq .squash_merge_commit_message` imprime `PR_BODY` e, se não, avise o usuário antes do merge. Rode `npm test` uma última vez e peça ao usuário `/clear` e, como **primeira mensagem do chat novo**, `/mission:ship-pr <n>`: a skill não precisa desta conversa (o PR e o resumo guardam tudo), e cada chamada da espera pelo merge reenviaria o contexto inteiro. O plugin bloqueia `ship-pr` num chat que já tem conversa.
+ 7. **Com o PR integrado:** confirme as issues fechadas (`gh issue view <n> --json state`) e a `main-branch` local atualizada; avise que a missão terminou e que o próximo chat pode começar. Fato surgido no merge (ex.: check intermitente) vira issue e entra no resumo da próxima missão, não em PR novo.
+diff --git a/tests/test_require_fresh_chat.py b/tests/test_require_fresh_chat.py
+new file mode 100644
+index 0000000..16b342c
+--- /dev/null
++++ b/tests/test_require_fresh_chat.py
+@@ -0,0 +1,173 @@
++"""Tests for the mission plugin hook that keeps /mission:ship-pr to fresh chats.
++
++Each test runs the command exactly as plugins/mission/hooks/hooks.json
++declares it, through ``sh -c`` with ``CLAUDE_PLUGIN_ROOT`` exported, the way
++Claude Code runs a shell-form plugin hook (Hooks reference, "Exec form and
++shell form"). The hook input mirrors the documented UserPromptExpansion
++input, and the transcripts are synthetic JSONL shaped like real ones: a chat
++started by /clear holds user and system records but no assistant record.
++
++Run: python3 -m unittest discover -s tests -v
++"""
++
++import json
++import os
++import re
++import shutil
++import subprocess
++import tempfile
++import unittest
++from pathlib import Path
++
++PLUGIN_ROOT = Path(__file__).resolve().parent.parent / "plugins" / "mission"
++HOOKS_FILE = PLUGIN_ROOT / "hooks" / "hooks.json"
++SH = shutil.which("sh")
++TIMEOUT_SECONDS = 30
++
++# A chat that /clear just opened: what Claude Code writes before the first
++# prompt of the new session reaches the model
++FRESH_CHAT = [
++    {"type": "mode", "mode": "normal", "sessionId": "s1"},
++    {"type": "user", "message": {"role": "user", "content": "<command-name>/clear</command-name>"}},
++    {"type": "system", "subtype": "local_command", "content": "<local-command-stdout></local-command-stdout>"},
++]
++ASSISTANT_REPLY = {
++    "parentUuid": "u1",
++    "message": {"id": "msg_1", "type": "message", "role": "assistant", "content": [{"type": "text", "text": "Hi"}]},
++    "type": "assistant",
++    "uuid": "a1",
++}
++
++
++def expansion_hooks() -> list[dict]:
++    """The UserPromptExpansion matcher groups the plugin declares."""
++    config = json.loads(HOOKS_FILE.read_text(encoding="utf-8"))
++    return config["hooks"]["UserPromptExpansion"]
++
++
++def write_transcript(directory: Path, records: list[dict]) -> Path:
++    path = directory / "transcript.jsonl"
++    # Compact separators, as Claude Code writes the transcript
++    lines = (json.dumps(record, separators=(",", ":")) for record in records)
++    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
++    return path
++
++
++def run_hook(hook_input: dict) -> subprocess.CompletedProcess:
++    """Run the declared command for /mission:ship-pr with this input."""
++    (group,) = expansion_hooks()
++    (handler,) = group["hooks"]
++    return subprocess.run(
++        [SH, "-c", handler["command"]],
++        input=json.dumps(hook_input),
++        capture_output=True,
++        text=True,
++        encoding="utf-8",
++        env={**os.environ, "CLAUDE_PLUGIN_ROOT": PLUGIN_ROOT.as_posix()},
++        timeout=TIMEOUT_SECONDS,
++        check=False,
++    )
++
++
++def ship_pr_input(transcript: Path | str | None) -> dict:
++    hook_input = {
++        "session_id": "s1",
++        "cwd": str(PLUGIN_ROOT),
++        "permission_mode": "default",
++        "hook_event_name": "UserPromptExpansion",
++        "expansion_type": "slash_command",
++        "command_name": "mission:ship-pr",
++        "command_args": "42",
++        "command_source": "plugin",
++        "prompt": "/mission:ship-pr 42",
++    }
++    if transcript is not None:
++        hook_input["transcript_path"] = str(transcript)
++    return hook_input
++
++
++@unittest.skipIf(SH is None, "sh not found on PATH")
++class RequireFreshChatTest(unittest.TestCase):
++    def setUp(self) -> None:
++        # A space in the path proves the command keeps it one argument
++        self.directory = Path(tempfile.mkdtemp(prefix="fresh chat "))
++        self.addCleanup(shutil.rmtree, self.directory)
++
++    def assert_allowed_silently(self, run: subprocess.CompletedProcess) -> None:
++        self.assertEqual(run.returncode, 0, run.stderr)
++        self.assertEqual(run.stdout.strip(), "", "an allowed command prints no decision")
++
++    def assert_fails_open(self, run: subprocess.CompletedProcess) -> None:
++        self.assert_allowed_silently(run)
++        self.assertIn("allowing", run.stderr, "failing open must say so on stderr")
++
++    def decision_of(self, run: subprocess.CompletedProcess) -> dict:
++        self.assertEqual(run.returncode, 0, run.stderr)
++        self.assertNotEqual(run.stdout.strip(), "", f"no decision printed; stderr: {run.stderr}")
++        return json.loads(run.stdout)
++
++    def test_blocks_ship_pr_in_a_chat_with_prior_conversation(self) -> None:
++        transcript = write_transcript(self.directory, [*FRESH_CHAT, ASSISTANT_REPLY])
++
++        run = run_hook(ship_pr_input(transcript))
++
++        decision = self.decision_of(run)
++        self.assertEqual(decision["decision"], "block")
++        self.assertIn("/clear", decision["reason"])
++        self.assertIn("/mission:ship-pr", decision["reason"])
++
++    def test_allows_ship_pr_as_the_first_message_after_clear(self) -> None:
++        transcript = write_transcript(self.directory, FRESH_CHAT)
++
++        self.assert_allowed_silently(run_hook(ship_pr_input(transcript)))
++
++    def test_quoted_assistant_text_in_a_user_message_does_not_block(self) -> None:
++        quoting = {"type": "user", "message": {"role": "user", "content": '{"type":"assistant"}'}}
++        transcript = write_transcript(self.directory, [*FRESH_CHAT, quoting])
++
++        self.assert_allowed_silently(run_hook(ship_pr_input(transcript)))
++
++    def test_fails_open_when_the_transcript_is_missing(self) -> None:
++        run = run_hook(ship_pr_input(self.directory / "missing.jsonl"))
++
++        self.assert_fails_open(run)
++
++    def test_fails_open_when_the_transcript_is_unreadable(self) -> None:
++        # A directory: unreadable as a file on every platform, unlike chmod
++        self.assert_fails_open(run_hook(ship_pr_input(self.directory)))
++
++    def test_fails_open_when_the_input_has_no_transcript_path(self) -> None:
++        self.assert_fails_open(run_hook(ship_pr_input(None)))
++
++    @unittest.skipIf(os.name == "nt", "a backslash cannot be part of a file name on Windows")
++    def test_reads_a_path_with_json_escapes(self) -> None:
++        # On Windows every path above already arrives escaped (C:\\Users\\...)
++        odd = self.directory / 'back\\slash "quote"'
++        odd.mkdir()
++        transcript = write_transcript(odd, [*FRESH_CHAT, ASSISTANT_REPLY])
++
++        run = run_hook(ship_pr_input(transcript))
++
++        self.assertEqual(self.decision_of(run)["decision"], "block")
++
++
++class MatcherTest(unittest.TestCase):
++    """The matcher contains ':', so Claude Code reads it as an unanchored
++    JavaScript regular expression (Hooks reference, "Matcher patterns");
++    Python's re.search agrees with RegExp.prototype.test for this pattern."""
++
++    def setUp(self) -> None:
++        (group,) = expansion_hooks()
++        self.matcher = group["matcher"]
++
++    def test_matches_ship_pr(self) -> None:
++        self.assertRegex("mission:ship-pr", self.matcher)
++
++    def test_does_not_match_other_commands(self) -> None:
++        for command in ("mission:close-mission", "mission:ship-pr-later", "other:mission:ship-pr", "ship-pr"):
++            with self.subTest(command=command):
++                self.assertIsNone(re.search(self.matcher, command))
++
++
++if __name__ == "__main__":
++    unittest.main()

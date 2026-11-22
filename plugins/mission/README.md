@@ -50,7 +50,7 @@ When a contract the skill needs is missing, the skill stops and asks instead of 
 - **Squash merging** allowed, with the **pull request title and description** as the default commit message (`squash_merge_commit_message` = `PR_BODY`). The mission record lives in the pull request body, and this setting is what writes it into the main branch's history.
 - **Auto-merge** allowed.
 - A **ruleset** on the main branch that requires the `gate` check, an up-to-date branch and linear history.
-- Labels `priority: P0`, `priority: P1` and `priority: P2`.
+- Labels `priority: P0`, `priority: P1` and `priority: P2`, and `reviewer-miss` (see [Measure the reviewer](#measure-the-reviewer)).
 
 ### 3. Optional: `REVIEW.md` at the repository root
 
@@ -68,6 +68,16 @@ Project-specific review checks go in `REVIEW.md` at the repository root, free-fo
 
 - Anything `tsc`, ESLint and Prettier already enforce.
 ```
+
+## Measure the reviewer
+
+The reviewer is a gate, and a gate is trusted only after it is seen rejecting what it should. Its errors are therefore recorded, so a change to the reviewer (prompt, `REVIEW.md`, model) can be measured instead of guessed:
+
+- **Every mission records them.** `close-mission` writes the reviewer's findings into the pull request body in three lists, each saying "none" when empty: fixed, **false positives** (findings discarded, each with the reason) and **false negatives** (defects the reviewer let through although its checklist or `REVIEW.md` covered them).
+- **A defect found after a merge gets the `reviewer-miss` label.** The issue (or pull request) that fixes it carries the label and links the pull request of the mission that shipped the defect, whether the current mission fixes it or opens it as a new issue. Create the label in the project; each `reviewer-miss` is a candidate for a new eval case.
+- **The reviewer reads the commit messages.** `close-mission` hands it the branch's commit messages followed by the diff, because the reviewer checks there how the RED was seen and has no shell to run `git log`.
+
+The answer key built from these records lives in [`evals/review/`](evals/README.md#review-whether-the-reviewer-finds-what-it-should): real merged missions, some with one planted defect and some clean.
 
 ## Ship in a fresh chat
 
@@ -87,7 +97,7 @@ The main session is not routed: it keeps one model and effort for the whole chat
 
 | Piece | `model` | `effort` | Why |
 | --- | --- | --- | --- |
-| `reviewer` agent | `opus` | `high` | Its findings are the last check before the pull request; a missed defect is silent. `high` is the documented level for "work where verification matters or edge cases are likely" ([Choose an effort level](https://code.claude.com/docs/en/model-config.md#choose-an-effort-level)). Before, it was `inherit`, so a session on a smaller model got a weaker review |
+| `reviewer` agent | `opus` | `high` | Its findings are the last check before the pull request; a missed defect is silent. `high` is the documented level for "work where verification matters or edge cases are likely" ([Choose an effort level](https://code.claude.com/docs/en/model-config.md#choose-an-effort-level)). Before, it was `inherit`, so a session on a smaller model got a weaker review. Baseline on the answer key: 12/12 planted defects found, 1 false positive in 6 reviews of merged missions ([`evals/`](evals/README.md#baseline-november-2026-claude-code-21327), [#38](https://github.com/brunoccalmeida/automation-template/issues/38)); whether a cheaper model does as well is [#40](https://github.com/brunoccalmeida/automation-template/issues/40) |
 | `researcher` agent | `sonnet` | `medium` | Its answer is evidence for the caller's decision, not the decision, and it must quote the page and give the URL, so a wrong fact can be checked. Measured on 5 documentation questions, 3 runs each, with the orchestrator and the judge pinned: Sonnet scored 1.000, the same as Opus, at about half the researcher's cost (US$ 0.99 against US$ 2.14 for the 15 runs); Haiku scored 0.983 (in one run it fetched an outdated docs URL instead of the official page), so the decision rule kept it out ([`evals/`](evals/README.md), [#34](https://github.com/brunoccalmeida/automation-template/issues/34)) |
 | `close-mission` skill | `inherit` | (session) | It runs in the main session, where a skill's `model` "applies for the rest of the current turn" ([Skills, frontmatter reference](https://code.claude.com/docs/en/skills.md#frontmatter-reference)): any other value would switch the session's model and discard its cache |
 | `ship-pr` skill | `opus` | (session) | It runs in a fresh chat, so a cheaper model would lose no cache, but it also resolves `DIRTY` by merging, where a wrong conflict resolution is silent. It stays on the strongest model until a measurement shows a cheaper one does as well ([#35](https://github.com/brunoccalmeida/automation-template/issues/35)) |

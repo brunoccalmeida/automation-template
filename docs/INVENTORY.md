@@ -93,6 +93,8 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
 
 **Agente `researcher` e roteamento de modelos (#34, 20/11/2026).** Peças novas, sem versão nos projetos de origem; a evidência é uma regra já em uso e uma medição. A regra "consulte a documentação oficial antes de sugerir" vale nos quatro projetos e era cumprida pela sessão principal, no modelo mais caro; o pesquisador a cumpre num subagente com contexto próprio. O modelo dele saiu de uma suíte de `claude plugin eval` (5 perguntas, 3 execuções, gabarito fixado antes; um deles corrigido depois da primeira rodada, com o caso refeito): Sonnet empatou com Opus (1,000) a cerca de metade do custo, e Haiku ficou abaixo (0,983). O `reviewer` deixou de herdar o modelo da sessão e foi fixado em `opus`/`high`.
 
+**Gabarito do revisor (#38, 22/11/2026).** Peças novas, sem versão nos projetos de origem; a evidência é uma lacuna observada e a regra de ouro. Os corpos dos PRs integrados registram achados do revisor, quase todos aplicados, e nenhum defeito que ele deixou passar; o revisor é um portão e nunca tinha sido visto reprovando. A captura (falsos positivos e negativos em três listas no corpo do PR, label `reviewer-miss`) vale para todo projeto que usa o plugin; a suíte `evals/review/` reaproveita missões integradas deste repositório. Na construção apareceu outra lacuna: o revisor recebia só o `git diff`, sem as mensagens de commit, e não tem `git`, então nunca conseguia conferir o registro do RED; o `close-mission` passou a entregar as mensagens junto.
+
 ## 3. Configuração e testes do próprio harness
 
 | Peça | UAT | kit | Melhor | Cat. | Fase |

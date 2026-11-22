@@ -1,0 +1,459 @@
+commit (mission branch)
+
+feat(mission): warn at session start when the installed plugin is outdated (#33)
+
+Closes #32
+
+## What
+
+A `SessionStart` hook (matcher `startup`) in the `mission` plugin
+compares the installed version with the published one and, when they
+differ, shows both SHAs and the update command to the user. Auto-update
+stays off; this makes the drift visible.
+
+- `plugins/mission/scripts/check-plugin-version.sh`: installed version =
+name of `${CLAUDE_PLUGIN_ROOT}` (the cache directory); published version
+= `HEAD` of the manifest's `repository`, read with `git ls-remote`;
+output as `{"systemMessage": ...}`; fails open with the reason on
+stderr.
+- `plugins/mission/hooks/hooks.json`: the `SessionStart` entry,
+`timeout` 10 s.
+- `tests/test_check_plugin_version.py`: runs the declared command
+against a synthetic cache entry whose manifest points at a local git
+repository, so no network is needed.
+- Plugin README (component table and "Warning when the plugin is
+outdated"), `docs/INVENTORY.md` (evidence), session summary.
+
+## Decisions
+
+- **Installed version is the marketplace `HEAD` SHA, not the last commit
+under `plugins/mission/`.** Verified locally: the cache holds
+`mission/f845d1b4e969`, and `f845d1b` (#29) does not touch
+`plugins/mission/`. Matches the docs: for a relative path in a
+Git-hosted marketplace, the version is "the commit SHA of the installed
+directory", 12 characters ([How Claude Code computes the
+version](https://code.claude.com/docs/en/plugins/loading.md#how-claude-code-computes-the-version)).
+- **Compare with `HEAD`, accept docs-only merges.** After a docs-only
+merge, `claude plugin update` really does install a new version, so the
+warning is accurate. Comparing with the last commit under
+`plugins/mission/` would need the GitHub API (rate limits, more moving
+parts) for no real gain (KISS).
+- **Repository from the manifest's `repository`.** Not hard-coded (would
+duplicate the manifest, DRY) and not from `known_marketplaces.json`
+(internal file, no documented contract). Assumes the plugin lives in the
+marketplace repository it names, as this one does; documented.
+- **`systemMessage`, not stdout or `additionalContext`.**
+`systemMessage` is the "warning message shown to the user"; on
+`SessionStart`, plain stdout and `additionalContext` enter Claude's
+context ([Hooks
+reference](https://code.claude.com/docs/en/hooks.md#sessionstart)) and
+would cost tokens every session.
+- **Matcher `startup` only.** The loaded version only changes when
+Claude Code launches.
+- **Timeout 10 s.** Claude's first response waits for `SessionStart`
+hooks (same section). Measured on Windows: `git ls-remote` to GitHub
+0.5–0.75 s; unresolvable host fails in ~5 s.
+
+## How RED was seen
+
+- `python -m unittest tests.test_check_plugin_version` before the hook:
+6 of 6 errored with `KeyError: 'SessionStart'`.
+- Mutations seen failing, then undone: always warning → the up-to-date
+test failed; `additionalContext` instead of `systemMessage` → the
+warning test failed; renaming the manifest key the script reads → the
+unreachable-repository test failed.
+- Gates: `validate_plugins.py` OK (no warning beyond the omitted
+version); `python -m unittest discover -s tests` 15 tests OK (1
+pre-existing POSIX-only skip).
+
+## End-to-end check
+
+Real headless session (`claude -p`, CLI 2.1.326, `--plugin-dir` on a
+copy of the plugin in a directory named `84b2bf30f3ee`,
+`--include-hook-events`): the hook ran as `SessionStart:startup` and
+emitted the `systemMessage`; asked whether its context mentions
+"desatualizado" or the SHA, the model answered **NO**.
+
+Also ran against the real cache of this repository: `instalado
+84b2bf30f3ee, publicado e316a24e9826`.
+
+Both remaining acceptance criteria were then seen:
+
+- [x] **Positive control:** the same probe, with the copy of the script
+emitting `additionalContext` instead, answered **YES**; rerun right
+after with the real script, **NO**. The probe can detect hook context,
+so the NO proves `systemMessage` stays out of it.
+- [x] **Shown in the interactive UI:** `claude --plugin-dir <copy named
+84b2bf30f3ee>` in a terminal showed, below the startup notices,
+`SessionStart:startup says: Plugin mission desatualizado: instalado
+84b2bf30f3ee, publicado e316a24e9826. Para atualizar, rode no shell
+claude plugin update mission@brunoccalmeida-plugins e depois
+/reload-plugins (ou abra uma sessão nova).` It shows a moment after the
+banner, since interactive `SessionStart` hooks run in the background
+([Hooks reference,
+SessionStart](https://code.claude.com/docs/en/hooks.md#sessionstart)).
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ docs/INVENTORY.md                               |   2 +
+ docs/PROJECT_SESSION_SUMMARY.md                 |   6 +-
+ plugins/mission/README.md                       |  12 ++
+ plugins/mission/hooks/hooks.json                |  12 ++
+ plugins/mission/scripts/check-plugin-version.sh |  71 ++++++++++
+ tests/test_check_plugin_version.py              | 181 ++++++++++++++++++++++++
+ 6 files changed, 281 insertions(+), 3 deletions(-)
+
+diff --git a/docs/INVENTORY.md b/docs/INVENTORY.md
+index a1a6b23..ab39ee4 100644
+--- a/docs/INVENTORY.md
++++ b/docs/INVENTORY.md
+@@ -89,6 +89,8 @@ Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**).
+ 
+ **Trava de chat novo no `ship-pr` (#30, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma medição, não uma repetição. Em 8 transcripts de missões de um projeto que usa o plugin, o `ship-pr` rodou no fim do chat da implementação, com 100k a 290k tokens de contexto, e reenviou esse contexto em cada uma das suas 36 a 95 chamadas. Num chat novo (cerca de 50k tokens fixos), cada missão custaria de 6% a 14% menos (10% em média). O `/clear` antes do `ship-pr` é hábito, e hábito falha; por isso vira hook do plugin, ao lado da skill que ele protege.
+ 
++**Aviso de plugin desatualizado (#32, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma observação. Depois do merge do #31, 4 dos 5 projetos que usam o plugin seguiam em versões antigas (`f845d1b`, `84b2bf3`), sem nenhum aviso. O `autoUpdate: false` é decisão (atualizar de propósito, revisando a mudança), então a peça é visibilidade, não atualização: um hook `SessionStart` que compara a versão instalada com a publicada.
++
+ ## 3. Configuração e testes do próprio harness
+ 
+ | Peça | UAT | kit | Melhor | Cat. | Fase |
+diff --git a/docs/PROJECT_SESSION_SUMMARY.md b/docs/PROJECT_SESSION_SUMMARY.md
+index d0f1670..37cca47 100644
+--- a/docs/PROJECT_SESSION_SUMMARY.md
++++ b/docs/PROJECT_SESSION_SUMMARY.md
+@@ -9,17 +9,17 @@ Estado do projeto entre chats. Lido no início de cada missão (ver `.github/cop
+ | Item | Estado |
+ | --- | --- |
+ | Situação | **Retomada parcial: plugin** (17/11/2026, [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)). O Copier continua pausado ([Pausa](#pausa)). **Fila do plugin concluída:** A (#14), B (#15, kit), A.1 (#19, #20, #21), C1 (#22, nextjs), C2 (#23, UAT) e D (#17, este repositório) |
+-| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer` e a trava que só deixa o `ship-pr` rodar como primeira mensagem de um chat novo (hook `UserPromptExpansion`, #30), em uso nos quatro projetos, incluindo este (instalado do GitHub, `autoUpdate: false`) |
++| Entregue | Marketplace `brunoccalmeida-plugins` com o plugin [`mission`](../plugins/mission/README.md): `/mission:close-mission`, `/mission:ship-pr`, `mission:reviewer` e a trava que só deixa o `ship-pr` rodar como primeira mensagem de um chat novo (hook `UserPromptExpansion`, #30) e o aviso de plugin desatualizado no início da sessão (hook `SessionStart`, #32), em uso nos quatro projetos, incluindo este (instalado do GitHub, `autoUpdate: false`) |
+ | Próxima missão | Nenhuma neste repositório: a prioridade é o plano de portfólio. O Copier (#2 a #11) espera o gatilho do [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) e da [Pausa](#pausa) |
+ | Fila | Documentação do plugin (P2): #25 (`/reload-plugins` após instalar pelo shell) e #26 (Copilot e o plugin) · Copier: #2 a #11, pausados |
+ | Pendência no kit | Atualizar o plugin e apagar a regra local de contorno do `DIRTY` (kit#52) |
+-| Pendência nos projetos | Atualizar o plugin (`claude plugin update mission@brunoccalmeida-plugins`) no kit, no nextjs e no UAT para receber a trava de chat novo (#30); opcional, sem mudança de contrato |
++| Pendência nos projetos | Atualizar o plugin (`claude plugin update mission@brunoccalmeida-plugins`) neste repositório, no kit, no nextjs e no UAT para receber a trava de chat novo (#30) e o aviso de versão (#32); sem mudança de contrato. Depois disso, o próprio aviso aponta as próximas defasagens |
+ | PRs abertos | nenhum após o merge |
+ | Portões | `ci-passed`, único check exigido pelo ruleset "Protect main" ([`.github/rulesets/`](../.github/rulesets/protect-main.json), #28): agrega `validate-plugins` (marketplace e cada plugin; reprova erro ou *warning*, menos o `version` omitido) e `test-plugins` (testes dos hooks do plugin, `tests/`), e reprova se um job do workflow faltar no `needs` |
+ | Ferramenta de CI | Claude Code CLI 2.1.326 fixado com lockfile em `.github/tools/claude-cli/`; subir de versão exige aprovar de novo o `postinstall` (`allowScripts` preso à versão) |
+ | Decisões | [ADR 0001](adr/0001-use-copier.md) Copier · [ADR 0002](adr/0002-core-plus-packs-split-by-tool.md) núcleo + packs por ferramenta · [ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md) núcleo agnóstico com contratos · [ADR 0004](adr/0004-partial-resumption-with-a-plugin.md) retomada parcial com plugin |
+ | Evidência | [INVENTORY.md](INVENTORY.md): peças dos projetos de origem classificadas (núcleo / pack / app); nextjs como terceira fonte e a comparação das quatro versões das peças do plugin |
+-| Armadilhas | `/mission:ship-pr` só roda como primeira mensagem de um chat novo: `/clear` antes (#30). Mudança no plugin é fechada pela versão publicada; a da branch se experimenta com `claude --plugin-dir ./plugins/mission`, e depois do merge, `claude plugin update mission@brunoccalmeida-plugins` (regras, Git). Plugin instalado pelo shell só carrega após `/reload-plugins` ou sessão nova (#25). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
++| Armadilhas | `/mission:ship-pr` só roda como primeira mensagem de um chat novo: `/clear` antes (#30). Mudança no plugin é fechada pela versão publicada; a da branch se experimenta com `claude --plugin-dir ./plugins/mission`, e depois do merge, `claude plugin update mission@brunoccalmeida-plugins` (regras, Git). Com `--plugin-dir`, o aviso de versão (#32) se cala de propósito: o diretório não tem nome de SHA; para vê-lo, copie o plugin para um diretório com nome de SHA antigo. Plugin instalado pelo shell só carrega após `/reload-plugins` ou sessão nova (#25). PR de outro repositório só fecha issue daqui com `Closes brunoccalmeida/automation-template#N` (a #15 ficou aberta por isso). Para rodar o portão no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd` |
+ 
+ ## Plano de missões
+ 
+diff --git a/plugins/mission/README.md b/plugins/mission/README.md
+index b7004b2..05c6472 100644
+--- a/plugins/mission/README.md
++++ b/plugins/mission/README.md
+@@ -8,6 +8,7 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
+ | `ship-pr` skill | `/mission:ship-pr [pr-number]`, by the user only, as the first message of a fresh chat | Turns on squash auto-merge pinned to the head SHA and waits for the outcome |
+ | `reviewer` agent | `mission:reviewer`, called by `close-mission` | Reviews the mission diff against its issue and against what no automated gate covers |
+ | Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |
++| Version check (hook) | Runs by itself when Claude Code starts | Warns when the installed plugin is not the published one; see [Updates](#updates) |
+ 
+ The plugin is the same for every project: it carries no per-project variables. It names **contracts**, and each project declares the real command or value behind each contract in its own rules, as described below. The skills and the reviewer are written in Brazilian Portuguese, the language of the rules of the projects that use them.
+ 
+@@ -128,6 +129,17 @@ claude plugin update mission@brunoccalmeida-plugins
+ /plugin marketplace update brunoccalmeida-plugins
+ ```
+ 
++### Warning when the plugin is outdated
++
++Manual updates drift: after one merge, 4 of the 5 projects using the plugin were still on older versions, and nothing said so ([#32](https://github.com/brunoccalmeida/automation-template/issues/32)). Turning auto-update on would hide that drift instead of fixing it, since reviewing what changed is the point of updating on purpose. So the plugin makes the drift visible and leaves the update to you: a [`SessionStart`](https://code.claude.com/docs/en/hooks.md#sessionstart) hook ([`scripts/check-plugin-version.sh`](scripts/check-plugin-version.sh)) compares the installed version with the published one when Claude Code starts and, when they differ, shows both SHAs and the update command.
++
++- **Installed version:** the name of the plugin's cache directory, which `${CLAUDE_PLUGIN_ROOT}` points at. With no `version` in the manifest, it is the marketplace commit SHA shortened to 12 characters ([How Claude Code computes the version](https://code.claude.com/docs/en/plugins/loading.md#how-claude-code-computes-the-version)).
++- **Published version:** `HEAD` of the manifest's `repository`, read with `git ls-remote`, which needs no model and no GitHub API. It assumes the plugin lives in the marketplace repository it names, as this one does. A merge that touches only documentation also moves `HEAD`, and then `claude plugin update` really does install a new version, so the warning is accurate.
++- **Shown to you, not to Claude:** the warning is a `systemMessage`, the "warning message shown to the user"; plain stdout and `additionalContext` from `SessionStart` enter Claude's context ([Hooks reference, SessionStart](https://code.claude.com/docs/en/hooks.md#sessionstart)) and would cost tokens every session.
++- **Startup only:** the matcher is `startup`. The loaded version only changes when Claude Code launches, so `/clear`, resume and compaction never run it.
++- **It fails open.** Offline, no `git`, no `repository` in the manifest, or a plugin loaded in place with `--plugin-dir` (its directory is not named after a commit): nothing is shown, and the reason goes to stderr, readable with debug logging ([Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0)).
++- **It costs at most 10 seconds, usually under one.** "Claude's first response still waits for the hooks to finish" ([Hooks reference, SessionStart](https://code.claude.com/docs/en/hooks.md#sessionstart)), so the hook's `timeout` is 10 seconds. Measured on Windows: `git ls-remote` to GitHub took 0.5 to 0.75 s, and a host that does not resolve failed in about 5 s. Only a connection that hangs without answering reaches the timeout.
++
+ ## Track the adoption from this repository
+ 
+ A mission that adopts or changes the plugin in a project is often tracked by an issue in this repository. The project's pull request closes that issue only if its description says `Closes brunoccalmeida/automation-template#N`: a bare `#N` points to the project's own repository ([Linking a pull request to an issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword), "Issue in a different repository"). The keyword takes effect only when the pull request merges into the default branch.
+diff --git a/plugins/mission/hooks/hooks.json b/plugins/mission/hooks/hooks.json
+index d247ce2..968a029 100644
+--- a/plugins/mission/hooks/hooks.json
++++ b/plugins/mission/hooks/hooks.json
+@@ -1,5 +1,17 @@
+ {
+   "hooks": {
++    "SessionStart": [
++      {
++        "matcher": "startup",
++        "hooks": [
++          {
++            "type": "command",
++            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/scripts/check-plugin-version.sh\"",
++            "timeout": 10
++          }
++        ]
++      }
++    ],
+     "UserPromptExpansion": [
+       {
+         "matcher": "^mission:ship-pr$",
+diff --git a/plugins/mission/scripts/check-plugin-version.sh b/plugins/mission/scripts/check-plugin-version.sh
+new file mode 100644
+index 0000000..3849a0f
+--- /dev/null
++++ b/plugins/mission/scripts/check-plugin-version.sh
+@@ -0,0 +1,71 @@
++#!/bin/sh
++# SessionStart hook (matcher "startup"): warn the user when the installed
++# plugin is not the published one (issue #32). Updates stay manual
++# (autoUpdate: false); this makes the drift visible.
++#
++# Installed version: a cached marketplace install lives in a directory named
++# after its version, and with no "version" in the manifest that is the
++# commit SHA of the marketplace, shortened to 12 characters (Plugin loading
++# reference, "How Claude Code computes the version"). ${CLAUDE_PLUGIN_ROOT}
++# points at that directory.
++#
++# Published version: HEAD of the repository named by "repository" in the
++# manifest, read with git ls-remote. It assumes the plugin is hosted in the
++# marketplace repository it names, as this one is. A merge that touches only
++# documentation also moves HEAD, and then an update really does install a
++# new version, so the warning is accurate, not noise.
++#
++# The warning goes out as systemMessage, shown to the user only: plain stdout
++# and additionalContext would enter Claude's context on every session
++# (Hooks reference, SessionStart). It guards visibility, not safety:
++# anything unexpected prints nothing and says why on stderr. POSIX sh, grep,
++# sed and git only, because the plugin runs in projects of any stack, and on
++# Windows through Git Bash.
++
++say() {
++  printf 'check-plugin-version: %s\n' "$*" >&2
++}
++
++root=${CLAUDE_PLUGIN_ROOT:-}
++if [ -z "$root" ]; then
++  say "CLAUDE_PLUGIN_ROOT is not set; skipping"
++  exit 0
++fi
++
++installed=$(basename "$root")
++if ! printf '%s\n' "$installed" | grep -qxE '[0-9a-f]{12}'; then
++  # --plugin-dir and local marketplaces load the source in place
++  say "plugin root is not a cached install named after a commit: $root; skipping"
++  exit 0
++fi
++
++# "repository" from the manifest, JSON-unescaped. No jq: it is not on every
++# machine.
++manifest="$root/.claude-plugin/plugin.json"
++repository=$(tr -d '\r\n' <"$manifest" 2>/dev/null |
++  sed -nE 's/.*"repository"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)".*/\1/p' |
++  sed -e 's/\\"/"/g' -e 's/\\\//\//g' -e 's/\\\\/\\/g')
++if [ -z "$repository" ]; then
++  say "no repository in $manifest; skipping"
++  exit 0
++fi
++
++if ! command -v git >/dev/null 2>&1; then
++  say "git not found; skipping"
++  exit 0
++fi
++
++# GIT_TERMINAL_PROMPT=0: a repository that asks for credentials fails at once
++# instead of waiting for input nobody can type. git's own error goes to stderr.
++published=$(GIT_TERMINAL_PROMPT=0 git ls-remote "$repository" HEAD | tr -d '\r' |
++  sed -nE 's/^([0-9a-f]{40})[[:space:]]+HEAD$/\1/p' | cut -c1-12)
++if [ -z "$published" ]; then
++  say "could not read HEAD of $repository; skipping"
++  exit 0
++fi
++
++if [ "$installed" = "$published" ]; then
++  exit 0
++fi
++
++printf '{"systemMessage":"%s"}\n' "Plugin mission desatualizado: instalado $installed, publicado $published. Para atualizar, rode no shell claude plugin update mission@brunoccalmeida-plugins e depois /reload-plugins (ou abra uma sessão nova)."
+diff --git a/tests/test_check_plugin_version.py b/tests/test_check_plugin_version.py
+new file mode 100644
+index 0000000..30c6fea
+--- /dev/null
++++ b/tests/test_check_plugin_version.py
+@@ -0,0 +1,181 @@
++"""Tests for the mission plugin hook that warns when the installed plugin is outdated.
++
++Each test runs the command exactly as plugins/mission/hooks/hooks.json
++declares it, through ``sh -c`` with ``CLAUDE_PLUGIN_ROOT`` exported, the way
++Claude Code runs a shell-form plugin hook (Hooks reference, "Exec form and
++shell form").
++
++The plugin root is a synthetic cache entry shaped like a real one: a
++directory named after the installed version, the commit SHA shortened to 12
++characters (Plugin loading reference, "How Claude Code computes the
++version"), holding the hook script and a manifest whose ``repository`` is a
++local git repository. ``git ls-remote`` reads it without network, so the
++published version is under the test's control.
++
++Run: python3 -m unittest discover -s tests -v
++"""
++
++import json
++import os
++import shutil
++import subprocess
++import tempfile
++import time
++import unittest
++from pathlib import Path
++
++PLUGIN_ROOT = Path(__file__).resolve().parent.parent / "plugins" / "mission"
++HOOKS_FILE = PLUGIN_ROOT / "hooks" / "hooks.json"
++SH = shutil.which("sh")
++GIT = shutil.which("git")
++TIMEOUT_SECONDS = 30
++UPDATE_COMMAND = "claude plugin update mission@brunoccalmeida-plugins"
++
++
++def session_start_hooks() -> list[dict]:
++    """The SessionStart matcher groups the plugin declares."""
++    config = json.loads(HOOKS_FILE.read_text(encoding="utf-8"))
++    return config["hooks"]["SessionStart"]
++
++
++def git(*args: str, cwd: Path) -> str:
++    identity = {
++        "GIT_AUTHOR_NAME": "test",
++        "GIT_AUTHOR_EMAIL": "test@example.invalid",
++        "GIT_COMMITTER_NAME": "test",
++        "GIT_COMMITTER_EMAIL": "test@example.invalid",
++    }
++    run = subprocess.run(
++        [GIT, *args],
++        cwd=cwd,
++        capture_output=True,
++        text=True,
++        env={**os.environ, **identity},
++        timeout=TIMEOUT_SECONDS,
++        check=True,
++    )
++    return run.stdout.strip()
++
++
++def make_published_repository(directory: Path) -> tuple[Path, str]:
++    """A git repository with one commit; returns its path and HEAD SHA."""
++    repository = directory / "published repo"
++    repository.mkdir()
++    git("init", "--quiet", cwd=repository)
++    git("commit", "--quiet", "--allow-empty", "-m", "publish", cwd=repository)
++    return repository, git("rev-parse", "HEAD", cwd=repository)
++
++
++def make_cache_entry(directory: Path, version: str, repository: str | None) -> Path:
++    """A plugin root like cache/<marketplace>/mission/<version>/."""
++    root = directory / "cache" / version
++    (root / "scripts").mkdir(parents=True)
++    (root / ".claude-plugin").mkdir()
++    for script in (PLUGIN_ROOT / "scripts").iterdir():
++        shutil.copy(script, root / "scripts" / script.name)
++    manifest = {"name": "mission", "description": "test"}
++    if repository is not None:
++        manifest["repository"] = repository
++    (root / ".claude-plugin" / "plugin.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
++    return root
++
++
++def run_hook(plugin_root: Path) -> subprocess.CompletedProcess:
++    """Run the declared SessionStart command against this plugin root."""
++    (group,) = session_start_hooks()
++    (handler,) = group["hooks"]
++    hook_input = {
++        "session_id": "s1",
++        "transcript_path": str(plugin_root / "transcript.jsonl"),
++        "cwd": str(plugin_root),
++        "hook_event_name": "SessionStart",
++        "source": "startup",
++    }
++    process = subprocess.Popen(
++        [SH, "-c", handler["command"]],
++        stdin=subprocess.PIPE,
++        stdout=subprocess.PIPE,
++        stderr=subprocess.PIPE,
++        text=True,
++        encoding="utf-8",
++        env={**os.environ, "CLAUDE_PLUGIN_ROOT": plugin_root.as_posix(), "GIT_TERMINAL_PROMPT": "0"},
++    )
++    process.stdin.write(json.dumps(hook_input))
++    process.stdin.close()
++    # git ls-remote on a local repository answers well under a second
++    time.sleep(2)
++    stdout, stderr = process.stdout.read(), process.stderr.read()
++    return subprocess.CompletedProcess(process.args, process.poll(), stdout, stderr)
++
++
++@unittest.skipIf(SH is None or GIT is None, "sh or git not found on PATH")
++class CheckPluginVersionTest(unittest.TestCase):
++    def setUp(self) -> None:
++        # A space in the path proves the command keeps it one argument
++        self.directory = Path(tempfile.mkdtemp(prefix="plugin version "))
++        self.addCleanup(shutil.rmtree, self.directory, ignore_errors=True)
++        self.repository, self.published = make_published_repository(self.directory)
++
++    def assert_silent(self, run: subprocess.CompletedProcess) -> None:
++        self.assertEqual(run.returncode, 0, run.stderr)
++        self.assertEqual(run.stdout.strip(), "", "nothing may reach the user or Claude's context")
++
++    def assert_fails_open(self, run: subprocess.CompletedProcess, reason: str) -> None:
++        self.assert_silent(run)
++        # The specific reason, so an earlier exit cannot pass for this one
++        self.assertIn(reason, run.stderr, "failing open must say why on stderr")
++        self.assertIn("skipping", run.stderr)
++
++    def test_warns_when_the_installed_version_is_not_the_published_one(self) -> None:
++        installed = "0123456789ab"
++        root = make_cache_entry(self.directory, installed, self.repository.as_posix())
++
++        run = run_hook(root)
++
++        self.assertEqual(run.returncode, 0, run.stderr)
++        self.assertNotEqual(run.stdout.strip(), "", f"no warning printed; stderr: {run.stderr}")
++        output = json.loads(run.stdout)
++        # systemMessage is shown to the user; plain stdout and additionalContext
++        # would enter Claude's context on every session (Hooks reference)
++        self.assertEqual(set(output), {"systemMessage"})
++        message = output["systemMessage"]
++        self.assertIn(installed, message)
++        self.assertIn(self.published[:12], message)
++        self.assertIn(UPDATE_COMMAND, message)
++
++    def test_is_silent_when_the_installed_version_is_the_published_one(self) -> None:
++        root = make_cache_entry(self.directory, self.published[:12], self.repository.as_posix())
++
++        self.assert_silent(run_hook(root))
++
++    def test_fails_open_when_the_published_version_cannot_be_read(self) -> None:
++        # Stands for offline or an unreachable host: ls-remote fails the same way
++        missing = (self.directory / "no such repo").as_posix()
++        root = make_cache_entry(self.directory, "0123456789ab", missing)
++
++        self.assert_fails_open(run_hook(root), "could not read HEAD")
++
++    def test_fails_open_when_the_manifest_has_no_repository(self) -> None:
++        root = make_cache_entry(self.directory, "0123456789ab", None)
++
++        self.assert_fails_open(run_hook(root), "no repository")
++
++    def test_fails_open_when_the_plugin_is_not_a_cached_install(self) -> None:
++        # --plugin-dir loads the source directory in place, named after the plugin
++        root = make_cache_entry(self.directory, "mission", self.repository.as_posix())
++
++        self.assert_fails_open(run_hook(root), "not a cached install")
++
++
++class MatcherTest(unittest.TestCase):
++    """The loaded version only changes when Claude Code launches, so the hook
++    runs on startup alone. A matcher of letters only is an exact string
++    (Hooks reference, "Matcher patterns")."""
++
++    def test_runs_on_startup_only(self) -> None:
++        (group,) = session_start_hooks()
++        self.assertEqual(group["matcher"], "startup")
++
++
++if __name__ == "__main__":
++    unittest.main()
