@@ -70,6 +70,21 @@ Mutant reviewers on `haiku`, one run per case: one that always answers "Sem acha
 - **Runs not counted:** 6 reviews of an unpatched workspace (the `git apply` trap above) and 6 clean reviews graded before the known-defect lists, US$ 4.96 together; the Pro plan's 5-hour limit stopped the first attempt after 6 reviews.
 - **Caveat:** in the baseline, the graders of `stack-term-in-skill` and `clean-fresh-chat-guard` were saved as cp1252 instead of UTF-8, so the judge read a few accented words garbled ("N�o reporte"); the files were fixed afterwards and the verdicts did not depend on those words. Item 8 of the `clean-fresh-chat-guard` list was added after the baseline.
 
+### English prompt (November 2026, Claude Code 2.1.327, #48)
+
+The baseline above was measured on the Portuguese `reviewer.md`. The same arm on its English translation, same method:
+
+| Reviewer | `finds-planted-defect` | `no-invented-findings` | Cost, 18 runs |
+| --- | --- | --- | --- |
+| `opus`/`high`, English | 12/12 | 5/6 | US$ 5.76 (reviewer and orchestrator US$ 5.39, judge US$ 0.37) |
+
+Not lower than the baseline on either rate, so the translation was adopted. The two `no-invented-findings` failures were read before scoring (decision rule, item 4); each run reported three findings, two of them in the case's list:
+
+- **`clean-fresh-chat-guard`, run 2, counted as a pass:** the new finding holds. The #31 RED (`FileNotFoundError` for `hooks.json`) stops every test before its assertion, and the three recorded mutations leave five tests unproven. It became item 9 of the case's list and, since the tests are still on `main`, part of a `reviewer-miss` issue (#51) together with item 3 of `clean-version-check`, which had never been opened as one.
+- **`clean-version-check`, run 2, still a failure:** the reviewer said a connection that hangs makes the hook reach its 10-second timeout and so not fail open. The [Timeouts section](https://code.claude.com/docs/en/hooks.md#timeouts) says Claude Code cancels the hook and discards its output, and "on most events, when a hook fails or times out, Claude Code still carries out the action", reporting it as `timed out`: no warning, the session proceeds, and the wait is the one the mission's README documents.
+
+Both suites ran at once on the Max plan, with no run ending in error; together with the reruns below they used about 15% of a 5-hour window, so the plan's limit no longer constrains how many arms run together.
+
 ## `research/`: which model the `researcher` agent runs on
 
 Five documentation questions about Claude Code. Each answer was fixed before any run, quoted from the official page (one was corrected after the first runs, see [Writing a gold answer](#writing-a-gold-answer)), and lives only in the case's graders, which the agent under test cannot read. Each case has four graders:
@@ -117,4 +132,6 @@ Take it from **every** official page that covers the fact, not from the first pa
 | Sonnet | 1.000 | US$ 0.99 |
 | Haiku | 0.983 | US$ 0.31 |
 
-Sonnet ties Opus, so it was adopted; Haiku scored lower, so it was not. The researcher's model is read from the `modelUsage` of the `result` event in each run's trace (kept with `--keep-temp`), which proved every run used the intended model; the per-run `costUsd` minus `judgeCostUsd` equals that event's `total_cost_usd`.
+Sonnet ties Opus, so it was adopted; Haiku scored lower, so it was not.
+
+**English prompt (#48):** Sonnet on the translated `researcher.md` scored 0.95 at first (US$ 1.09 for researcher and orchestrator, 15 runs): `gold-facts` failed all 3 runs of `skill-model-duration` and nothing else. The skills page had rewritten its `model` row after the gold was written, and "The session model resumes when you send your next prompt" no longer exists anywhere on it; every run quoted the current row and reported the removed sentence as not found, which is what the prompt asks. The gold was rewritten from the current row, seen failing on a mutant that answers from stale notes (`gold-facts`, `no-wrong-facts` and `cites-official-source` all failed), and the case passed 3/3 with the real researcher: 1.000, a tie with the baseline. A gold quoted from live documentation ages: when one fact fails in every run, read the page again before blaming the model. The researcher's model is read from the `modelUsage` of the `result` event in each run's trace (kept with `--keep-temp`), which proved every run used the intended model; the per-run `costUsd` minus `judgeCostUsd` equals that event's `total_cost_usd`.
