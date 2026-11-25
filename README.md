@@ -19,12 +19,12 @@ claude plugin install mission@brunoccalmeida-plugins --scope project
 
 The plugin names contracts (`check`, `test`, `main-branch`, …) instead of commands, so each project declares the real values in a table in its rules. The [plugin README](plugins/mission/README.md) describes that table, the repository settings the skills rely on, and how to update.
 
-This repository runs its own missions with the plugin, installed from GitHub exactly as an adopting project installs it, with its contract table in [`CLAUDE.md`](CLAUDE.md#contratos), the shared core rules in [`.claude/rules/core.md`](.claude/rules/core.md), its review checks in [REVIEW.md](REVIEW.md) and a `ci-passed` gate required by the main ruleset ([`.github/rulesets/`](.github/rulesets/)).
+This repository runs its own missions with the plugin, installed from GitHub exactly as an adopting project installs it, with its contract table in [`CLAUDE.md`](CLAUDE.md#contracts), the shared core rules in [`.claude/rules/core.md`](.claude/rules/core.md), its review checks in [REVIEW.md](REVIEW.md) and a `ci-passed` gate required by the main ruleset ([`.github/rulesets/`](.github/rulesets/)).
 
 ## Design
 
 - [Architecture Decision Records](docs/adr/): why Copier, why a core plus packs split by tool, and why the core only defines contracts that each pack implements.
-- [Inventory](docs/INVENTORY.md) (Portuguese): every piece of the two source projects, classified as core, pack or application-specific, with the better of the two implementations.
+- [Inventory](docs/INVENTORY.md): every piece of the two source projects, classified as core, pack or application-specific, with the better of the two implementations.
 
 ## License
 
