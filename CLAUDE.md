@@ -19,7 +19,7 @@ Valores que o núcleo e o plugin [`mission`](plugins/mission/README.md) usam nes
 
 ## Exceções ao núcleo
 
-- **"Everything written to the repository is in English":** regras e documentos internos (`CLAUDE.md`, `REVIEW.md`, `docs/PROJECT_SESSION_SUMMARY.md`, `docs/INVENTORY.md`) continuam em português (Brasil) até a #46 traduzi-los. Por quê: traduzir é uma missão própria; misturar idiomas no mesmo documento seria pior que esperar.
+- **"Everything written to the repository is in English":** os arquivos marcados com `LTeX: language=pt-BR` (regras e documentos internos, e as skills e agentes do plugin) continuam em português (Brasil) até a #46 traduzi-los; quem edita um deles escreve em português. Por quê: traduzir é uma missão própria; misturar idiomas no mesmo documento seria pior que esperar.
 
 ## Regras de arquitetura do template
 

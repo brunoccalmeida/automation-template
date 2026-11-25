@@ -6,7 +6,7 @@ Verificações próprias deste repositório, lidas pelo `mission:reviewer` além
 
 ## Sempre verifique
 
-- **O núcleo não cita stack:** nada de ferramenta, linguagem ou tipo de alvo (`npm`, `pytest`, `playwright`, `BASE_URL`…) fora de um pack; o núcleo fala em contratos ([ADR 0003](docs/adr/0003-stack-agnostic-core-defines-contracts.md)).
+- **O núcleo não cita stack:** nada de ferramenta, linguagem ou tipo de alvo (`npm`, `pytest`, `playwright`, `BASE_URL`…) fora de um pack; o núcleo fala em contratos ([ADR 0003](docs/adr/0003-stack-agnostic-core-defines-contracts.md)). Vale para `.claude/rules/core.md`, que pode citar um valor só como exemplo da tabela de contratos.
 - **O pack não traz abstração do domínio:** walking skeleton só com infraestrutura, pastas documentadas e um smoke; nada de `BasePage`, page objects, clientes de API ou autenticação.
 - **O que entra tem evidência:** cada peça nova do template ou do plugin aparece em [`docs/INVENTORY.md`](docs/INVENTORY.md) ou num ADR em [`docs/adr/`](docs/adr/); sem isso, fica de fora (regra de três).
 - **O plugin não cita stack nem branch fixa:** skills e agentes em `plugins/` nomeiam contratos (`check`, `test`, `smoke`, `main-branch`, `gate`, `session-summary`), nunca um comando, ferramenta, `main`/`master` ou `ci-passed`. O README do plugin pode citar um valor só como exemplo da tabela de contratos.
