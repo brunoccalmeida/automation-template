@@ -17,7 +17,7 @@ Values that the core and the [`mission`](plugins/mission/README.md) plugin use i
 
 ## Exceptions to the core
 
-- **"Everything written to the repository is in English":** the plugin's skills and agents (`plugins/mission/skills/`, `plugins/mission/agents/`, marked `LTeX: language=pt-BR`) and the messages its hooks show (`plugins/mission/scripts/`) stay in Brazilian Portuguese until #48 translates them; whoever edits one writes in Portuguese. The eval fixtures under `plugins/mission/evals/review/` are historical diffs and stay as they were. Why: the skills and agents are prompts, and the reviewer's and researcher's model choices were measured against the Portuguese text (#34, #38), so translating them needs a new measurement; the hook messages go with them so that every project updates the plugin once, not twice.
+- **"Everything written to the repository is in English":** the plugin's skills and agents (`plugins/mission/skills/`, `plugins/mission/agents/`, marked `LTeX: language=pt-BR`) and the messages its hooks show (`plugins/mission/scripts/`) stay in Brazilian Portuguese until #48 translates them; whoever edits one writes in Portuguese. The eval fixtures under `plugins/mission/evals/review/` are historical diffs and stay as they were. Why: the skills and agents are prompts, and the reviewer's and researcher's model choices were measured against the Portuguese text (#34, #38), so translating them needs a new measurement; the hook messages go with them so that the plugin switches language in one change, not with some of its text in each language.
 
 ## Template architecture rules
 
