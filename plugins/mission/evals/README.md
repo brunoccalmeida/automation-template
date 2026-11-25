@@ -12,7 +12,7 @@ The `reviewer` agent is the last gate before a pull request, and until this suit
 | `stack-term-in-skill` | #31 | `close-mission` says "Rode `npm test`" | `REVIEW.md`: the plugin names contracts, not tools |
 | `missing-red-record` | #31 | The commit message lost its "How RED was seen" section | Checklist item 3: RED recorded |
 | `fixed-time-wait` | #33 | A test helper sleeps 2 s and reads `poll()` instead of waiting for the hook to exit | Checklist item 4: wait for the final state |
-| `clean-fresh-chat-guard` | #31 | None planted; 8 known real defects | Grader's list |
+| `clean-fresh-chat-guard` | #31 | None planted; 9 known real defects | Grader's list |
 | `clean-version-check` | #33 | None planted; 3 known real defects | Grader's list |
 
 The clean cases were meant to have nothing to report, and the first baseline proved them wrong: the reviewer reported findings in all 6 runs, and checked against the code almost all of them held. #31 and #33 were merged with defects their own reviews let through, the first recorded false negatives ([#39](https://github.com/brunoccalmeida/automation-template/issues/39), label `reviewer-miss`). So a clean case's grader lists the merged mission's **known real defects**, and `no-invented-findings` fails only on a finding outside that list; the one finding that did not hold came from the fixture itself (a reference to the "Reviewer findings" section this suite strips), and the fixture was fixed.
@@ -80,7 +80,7 @@ The baseline above was measured on the Portuguese `reviewer.md`. The same arm on
 
 Not lower than the baseline on either rate, so the translation was adopted. The two `no-invented-findings` failures were read before scoring (decision rule, item 4); each run reported three findings, two of them in the case's list:
 
-- **`clean-fresh-chat-guard`, run 2, counted as a pass:** the new finding holds. The #31 RED (`FileNotFoundError` for `hooks.json`) stops every test before its assertion, and the three recorded mutations leave five tests unproven. It became item 9 of the case's list and, since the tests are still on `main`, part of a `reviewer-miss` issue (#51) together with item 3 of `clean-version-check`, which had never been opened as one.
+- **`clean-fresh-chat-guard`, run 2, counted as a pass:** the new finding holds. The #31 RED (`FileNotFoundError` for `hooks.json`) stops every test before its assertion, and the three recorded mutations leave six tests unproven. It became item 9 of the case's list and, since the tests are still on `main`, part of a `reviewer-miss` issue (#51) together with item 3 of `clean-version-check`, which had never been opened as one.
 - **`clean-version-check`, run 2, still a failure:** the reviewer said a connection that hangs makes the hook reach its 10-second timeout and so not fail open. The [Timeouts section](https://code.claude.com/docs/en/hooks.md#timeouts) says Claude Code cancels the hook and discards its output, and "on most events, when a hook fails or times out, Claude Code still carries out the action", reporting it as `timed out`: no warning, the session proceeds, and the wait is the one the mission's README documents.
 
 Both suites ran at once on the Max plan, with no run ending in error; together with the reruns below they used about 15% of a 5-hour window, so the plan's limit no longer constrains how many arms run together.
