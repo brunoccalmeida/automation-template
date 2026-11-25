@@ -1,24 +1,22 @@
 ---
 name: ship-pr
-description: Liga o auto-merge (squash) de um PR na branch principal, preso ao SHA da head, e espera o resultado; quem decide é o ruleset. Só o usuário dispara, porque o merge é decisão humana.
+description: Turns on auto-merge (squash) for a PR into the main branch, pinned to the head SHA, and waits for the result; the ruleset decides. Only the user triggers it, because the merge is a human decision.
 disable-model-invocation: true
 argument-hint: '[pr-number]'
 model: opus
 ---
 
-<!-- LTeX: language=pt-BR -->
+Merge PR $ARGUMENTS into the main branch (no number: the current branch's PR, `gh pr view --json number`). Names in backticks such as `main-branch`, `gate`, `check` and `test` are **contracts**: the real value is in the contracts table of the project's rules (format in `${CLAUDE_PLUGIN_ROOT}/README.md`). A contract missing from the table: stop and ask, never guess.
 
-Integre à branch principal o PR $ARGUMENTS (sem número: o PR da branch atual, `gh pr view --json number`). Nomes em crases como `main-branch`, `gate`, `check` e `test` são **contratos**: o valor real está na tabela de contratos das regras do projeto (formato em `${CLAUDE_PLUGIN_ROOT}/README.md`). Contrato ausente da tabela: pare e pergunte, nunca adivinhe.
+What decides whether the PR can merge is the `main-branch` **ruleset** (`gate` check green on the head SHA, branch up to date, linear history). The skill does not reimplement that decision: it turns on [auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request), which merges only after every requirement passes, and waits for the result. Never `--admin`.
 
-Quem decide se pode integrar é o **ruleset** da `main-branch` (check `gate` verde no SHA da head, branch atualizada, histórico linear). A skill não reimplementa essa decisão: liga o [auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request), que só integra depois que todos os requisitos passam, e espera o resultado. Nunca `--admin`.
-
-1. Se houver outro PR aberto (`gh pr list`), pare e pergunte: um PR aberto por vez.
-2. Leia `gh pr view <n> --json state,headRefOid,mergeStateStatus`, uma leitura por comando.
-   - `MERGED`: vá ao passo 5.
-   - `UNKNOWN` (logo após um merge na `main-branch` ele ainda não foi calculado): leia de novo, no máximo 3 vezes; persistindo, pare e reporte.
-   - `BEHIND` ou `DIRTY`: confirme numa segunda leitura, porque um merge em andamento mostra esses estados por um instante. `BEHIND` confirmado: `gh pr update-branch <n>` e leia de novo (o SHA da head mudou). `DIRTY` confirmado (conflito; o auto-merge nunca integraria): resolva com **merge** da `main-branch` na branch do PR, nunca com rebase. `git fetch origin`, `git merge origin/<main-branch>` na branch do PR, resolva o conflito, rode `check` e `test`, commit e **push normal**; leia de novo (o SHA da head mudou). Conflito que pede decisão de conteúdo (as duas versões trazem mudanças que se excluem): pare e pergunte. Por que merge: o rebase reescreve os commits já publicados e só sobe com force push, que as travas de push do projeto costumam negar; o merge só acrescenta um commit. É o que o `gh pr update-branch` faz por padrão, e o squash leva um único commit à `main-branch`, que segue linear do mesmo jeito.
-3. `gh pr merge <n> --auto --squash --match-head-commit <sha>`, sozinho no comando. O `--match-head-commit` faz o GitHub recusar o merge se a head mudar depois da leitura. Com o PR já pronto, o `gh` integra direto em vez de ligar o auto-merge; o passo 4 cobre os dois casos. Saída diferente de 0: leia o stderr e pare. Título e corpo do squash vêm do PR, então revise-os antes.
-4. Espere o **resultado**, não um estado intermediário: os checks são lidos pelo SHA da head (logo após um push, `gh pr checks` ainda mostra os do commit anterior, ou nenhum) e o merge acontece depois deles, de forma assíncrona. Rode em segundo plano, aguardando a notificação, este laço (Bash), que só sai num estado final:
+1. If another PR is open (`gh pr list`), stop and ask: one open PR at a time.
+2. Read `gh pr view <n> --json state,headRefOid,mergeStateStatus`, one read per command.
+   - `MERGED`: go to step 5.
+   - `UNKNOWN` (right after a merge into the `main-branch` it has not been computed yet): read again, at most 3 times; if it persists, stop and report.
+   - `BEHIND` or `DIRTY`: confirm with a second read, because a merge in progress shows these states for a moment. `BEHIND` confirmed: `gh pr update-branch <n>` and read again (the head SHA changed). `DIRTY` confirmed (a conflict; auto-merge would never merge): resolve it by **merging** the `main-branch` into the PR branch, never by rebasing. `git fetch origin`, `git merge origin/<main-branch>` on the PR branch, resolve the conflict, run `check` and `test`, commit and **plain push**; read again (the head SHA changed). A conflict that needs a content decision (both versions bring changes that exclude each other): stop and ask. Why merge: a rebase rewrites commits already published and only goes up with a force push, which the project's push guards usually deny; a merge only adds a commit. It is what `gh pr update-branch` does by default, and the squash brings a single commit to the `main-branch`, which stays linear all the same.
+3. `gh pr merge <n> --auto --squash --match-head-commit <sha>`, alone in the command. `--match-head-commit` makes GitHub refuse the merge if the head changes after the read. With the PR already ready, `gh` merges directly instead of turning on auto-merge; step 4 covers both cases. Exit code other than 0: read stderr and stop. The squash title and body come from the PR, so review them first.
+4. Wait for the **result**, not an intermediate state: checks are read by the head SHA (right after a push, `gh pr checks` still shows the previous commit's, or none) and the merge happens after them, asynchronously. Run this loop (Bash) in the background, waiting for the notification; it only exits on a final state:
 
    ```sh
    n=<n>; sha=<sha>; gate=<gate>; : "${n:?}" "${sha:?}" "${gate:?}"; deadline=$((SECONDS + 1800))
@@ -29,19 +27,19 @@ Quem decide se pode integrar é o **ruleset** da `main-branch` (check `gate` ver
    echo "$out $gate=$result"
    ```
 
-   Erro de rede ou da API conta como "ainda não sei" e o laço tenta de novo; persistindo, o prazo de 30 min encerra com `timeout` e o último estado lido. `success`, `skipped` e `neutral` são as conclusões que o GitHub aceita num check obrigatório.
+   A network or API error counts as "not known yet" and the loop tries again; if it persists, the 30-minute deadline ends it with `timeout` and the last state read. `success`, `skipped` and `neutral` are the conclusions GitHub accepts in a required check.
 
-   - `MERGED`: vá ao passo 5.
-   - `gate` com falha: o PR não integra. Diagnostique pelo log (`gh run view <run-id> --log-failed`) e, depois do push da correção, volte ao passo 2 (o SHA preso no passo 3 era o antigo). O auto-merge **continua ligado**: um re-run verde integra sozinho; para impedir, `gh pr merge <n> --disable-auto`.
-   - `OPEN false` (auto-merge desligado, por exemplo por head nova ou `BEHIND`): volte ao passo 2.
-   - `CLOSED` (PR fechado sem merge): pare e reporte; não reabra nem tente integrar.
-   - `timeout`: reporte o último estado. Um check obrigatório além do `gate`, pendente ou falho, também segura o merge e termina aqui: nomeie-o com `gh pr checks <n>`.
-5. Confirme `MERGED` (`gh pr view <n> --json state`) e só então `git switch <main-branch>`, `git pull --ff-only` e apague a branch local integrada. Este chat é o único que vê o merge, então feche a missão aqui:
-   - **Issues fechadas:** liste as que o PR fecha com `gh pr view <n> --json closingIssuesReferences --jq '.closingIssuesReferences[].url'` (inclui as de outro repositório) e confira cada uma com `gh issue view <url> --json state`. O GitHub fecha as issues depois do merge, de forma assíncrona: issue ainda `OPEN`, leia de novo a cada 10 s até fechar, por no máximo 2 min; persistindo, reporte ao usuário, sem fechar à mão.
-   - **Issues citadas sem fechar:** leia o corpo (`gh pr view <n> --json body`) e confira o estado de cada issue que ele cita fora daquela lista. Lista vazia, ou issue citada ainda `OPEN`, é aviso ao usuário, que decide se o PR devia tê-la fechado: nenhuma palavra de fechamento chegou a ela (em outro repositório, só `Closes owner/repo#N` fecha). Foi o caso do kit#51, que fechou só kit#50 e citava automation-template#15 apenas como link.
-   - **Fato surgido no merge** (ex.: check intermitente, `BEHIND` repetido) vira issue e entra no resumo da próxima missão, não em PR novo.
-   - Avise que a missão terminou e que o próximo chat pode começar.
-6. Prazo esgotado ou falha, com o usuário possivelmente ausente: avise também com `PushNotification`, se a ferramenta existir.
-7. Espera interrompida (notificada como parada, ou a sessão reaberta): leia primeiro o estado real (`gh pr view <n> --json state,autoMergeRequest,mergeStateStatus`), conte ao usuário e só então retome do passo adequado; nunca presuma que a espera continua.
+   - `MERGED`: go to step 5.
+   - `gate` failed: the PR does not merge. Diagnose from the log (`gh run view <run-id> --log-failed`) and, after pushing the fix, go back to step 2 (the SHA pinned in step 3 was the old one). Auto-merge **stays on**: a green re-run merges on its own; to prevent it, `gh pr merge <n> --disable-auto`.
+   - `OPEN false` (auto-merge turned off, for example by a new head or `BEHIND`): go back to step 2.
+   - `CLOSED` (PR closed without a merge): stop and report; do not reopen it or try to merge.
+   - `timeout`: report the last state. A required check other than `gate`, pending or failed, also holds the merge and ends here: name it with `gh pr checks <n>`.
+5. Confirm `MERGED` (`gh pr view <n> --json state`) and only then `git switch <main-branch>`, `git pull --ff-only` and delete the merged local branch. This chat is the only one that sees the merge, so close the mission here:
+   - **Closed issues:** list the ones the PR closes with `gh pr view <n> --json closingIssuesReferences --jq '.closingIssuesReferences[].url'` (it includes those in another repository) and check each one with `gh issue view <url> --json state`. GitHub closes issues after the merge, asynchronously: an issue still `OPEN`, read again every 10 s until it closes, for at most 2 min; if it persists, report it to the user, without closing it by hand.
+   - **Issues cited but not closed:** read the body (`gh pr view <n> --json body`) and check the state of every issue it cites outside that list. An empty list, or a cited issue still `OPEN`, is a warning to the user, who decides whether the PR should have closed it: no closing keyword reached it (in another repository, only `Closes owner/repo#N` closes it). That was the case of kit#51, which closed only kit#50 and cited automation-template#15 only as a link.
+   - **A fact that came up in the merge** (e.g. a flaky check, repeated `BEHIND`) becomes an issue and goes into the next mission's summary, not into a new PR.
+   - Say the mission is over and the next chat can start.
+6. Deadline reached or failure, with the user possibly away: also notify with `PushNotification`, if the tool exists.
+7. Interrupted wait (notified as stopped, or the session reopened): first read the real state (`gh pr view <n> --json state,autoMergeRequest,mergeStateStatus`), tell the user and only then resume from the right step; never assume the wait is still running.
 
-**Limite:** tarefas em segundo plano morrem com a sessão, e nada acorda uma sessão fechada. O auto-merge segue no GitHub, mas ninguém reporta. Para retomar pelo passo 7, mande uma mensagem comum neste chat, ou `/clear` e `/mission:ship-pr <n>` como primeira mensagem do chat novo: digitado de novo num chat que já tem conversa, o comando é bloqueado pelo plugin.
+**Limit:** background tasks die with the session, and nothing wakes a closed session. Auto-merge keeps going on GitHub, but no one reports. To resume through step 7, send an ordinary message in this chat, or `/clear` and `/mission:ship-pr <n>` as the first message of the fresh chat: typed again in a chat that already has a conversation, the command is blocked by the plugin.

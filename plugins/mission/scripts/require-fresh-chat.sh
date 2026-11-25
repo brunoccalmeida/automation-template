@@ -47,4 +47,4 @@ case $? in
     ;;
 esac
 
-printf '%s\n' '{"decision":"block","reason":"/mission:ship-pr roda só como primeira mensagem de um chat novo: este chat já tem conversa, e cada chamada de ferramenta da espera pelo merge reenviaria todo esse contexto. Rode /clear e depois /mission:ship-pr <n> de novo; o PR e o resumo de sessão guardam tudo que a skill precisa."}'
+printf '%s\n' '{"decision":"block","reason":"/mission:ship-pr only runs as the first message of a fresh chat: this chat already has a conversation, and every tool call while waiting for the merge would resend all of that context. Run /clear and then /mission:ship-pr <n> again; the PR and the session summary hold everything the skill needs."}'

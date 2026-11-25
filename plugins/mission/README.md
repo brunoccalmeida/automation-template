@@ -11,7 +11,7 @@ A Claude Code plugin for working in **missions**: one GitHub issue per chat, a D
 | Fresh-chat guard (hook) | Runs by itself when `/mission:ship-pr` is typed | Blocks `/mission:ship-pr` in a chat that already has conversation; see [Ship in a fresh chat](#ship-in-a-fresh-chat) |
 | Version check (hook) | Runs by itself when Claude Code starts | Warns when the installed plugin is not the published one; see [Updates](#updates) |
 
-The plugin is the same for every project: it carries no per-project variables. It names **contracts**, and each project declares the real command or value behind each contract in its own rules, as described below. The skills, the agents and the hook messages are still in Brazilian Portuguese: the reviewer's and researcher's models were measured on that text ([#34](https://github.com/brunoccalmeida/automation-template/issues/34), [#38](https://github.com/brunoccalmeida/automation-template/issues/38)), so their translation waits for a new measurement ([#48](https://github.com/brunoccalmeida/automation-template/issues/48)).
+The plugin is the same for every project: it carries no per-project variables. It names **contracts**, and each project declares the real command or value behind each contract in its own rules, as described below.
 
 ## What a project must provide
 
