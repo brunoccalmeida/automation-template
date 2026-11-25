@@ -1,190 +1,188 @@
-<!-- LTeX: language=pt-BR -->
+# Inventory of the source projects
 
-# Inventário dos projetos de origem
+Mission 0 survey (2026-11-06): what exists in [uat-automation-framework](https://github.com/brunoccalmeida/uat-automation-framework) (**UAT**, Python/Behave/Selenium, 130+ PRs) and in [playwright-qa-starter-kit](https://github.com/brunoccalmeida/playwright-qa-starter-kit) (**kit**, Playwright/TS, Mission 3 in progress), which side does it better, and where each piece goes. It is the evidence behind every "in or out" decision in the template ([ADR 0002](adr/0002-core-plus-packs-split-by-tool.md)).
 
-Levantamento da Missão 0 (06/11/2026): o que existe em [uat-automation-framework](https://github.com/brunoccalmeida/uat-automation-framework) (**UAT**, Python/Behave/Selenium, 130+ PRs) e em [playwright-qa-starter-kit](https://github.com/brunoccalmeida/playwright-qa-starter-kit) (**kit**, Playwright/TS, Missão 3 em andamento), qual lado faz melhor e para onde cada peça vai. É a evidência por trás de cada decisão de "entra ou não entra" no template ([ADR 0002](adr/0002-core-plus-packs-split-by-tool.md)).
+## How to read
 
-## Como ler
+**Category** (where the piece will live):
 
-**Categoria** (de onde a peça vai morar):
+- **C — core contract:** the same intent in both projects and independent of the stack. Goes to the core, without naming a tool ([ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md)).
+- **P — pack implementation:** same shape, stack-specific content. Goes to the pack, as a walking skeleton.
+- **A — application-specific:** depends on Sauce Demo or Restful Booker. Stays out.
 
-- **N — contrato do núcleo:** a mesma intenção nos dois projetos e independente de stack. Vai para o núcleo, sem citar ferramenta ([ADR 0003](adr/0003-stack-agnostic-core-defines-contracts.md)).
-- **P — implementação do pack:** mesma forma, conteúdo da stack. Vai para o pack, como walking skeleton.
-- **A — específico do app:** depende do Sauce Demo ou do Restful Booker. Fica de fora.
+**Better:** which side serves as the base (UAT, kit, both combined, or none = gap). **Phase:** where it goes in the [plan](PROJECT_SESSION_SUMMARY.md#mission-plan).
 
-**Melhor:** qual lado serve de base (UAT, kit, os dois somados, ou nenhum = lacuna). **Fase:** onde entra no [plano](PROJECT_SESSION_SUMMARY.md#plano-de-missões).
+Stance: with only two projects, **when in doubt, leave it out** (rule of three). It moves up into the template when a third project repeats the pattern.
 
-Postura: com só dois projetos, **na dúvida, fica de fora** (regra de três). Sobe para o template quando um terceiro projeto repetir o padrão.
+**Third source (Mission A, 2026-11-17):** [playwright-nextjs-e2e-ci](https://github.com/brunoccalmeida/playwright-nextjs-e2e-ci) (**nextjs**, Playwright/TS over a frozen Next.js app) repeats the harness and fired the [partial resumption](adr/0004-partial-resumption-with-a-plugin.md). For now it counts only as a source for the plugin pieces ([§2](#mission-a-the-four-versions-of-the-plugin-pieces)); the other tables keep the two original sources until Copier resumes.
 
-**Terceira fonte (Missão A, 17/11/2026):** [playwright-nextjs-e2e-ci](https://github.com/brunoccalmeida/playwright-nextjs-e2e-ci) (**nextjs**, Playwright/TS sobre um app Next.js congelado) repete o harness e disparou a [retomada parcial](adr/0004-partial-resumption-with-a-plugin.md). Por enquanto ele entra só como fonte das peças do plugin ([§2](#missão-a-as-quatro-versões-das-peças-do-plugin)); as demais tabelas continuam com as duas fontes originais até a retomada do Copier.
+## 1. Always-loaded rules (`.github/copilot-instructions.md`, imported by `CLAUDE.md`)
 
-## 1. Regras sempre carregadas (`.github/copilot-instructions.md`, importado pelo `CLAUDE.md`)
-
-| Seção | UAT | kit | Melhor | Cat. | Fase |
+| Section | UAT | kit | Better | Cat. | Phase |
 | --- | --- | --- | --- | --- | --- |
-| `CLAUDE.md` com `@import` | Idêntico (resumo em `docs/ai-workflow/`) | Idêntico (resumo em `docs/`) | Empate | N | 2a |
-| Regra de ouro (RED) | "TDD" + duplo ciclo Behave/pytest | "Todo teste foi visto falhando", com dois caminhos: teste antes do código de suporte, ou mutação; vale também para portões | **kit**: agnóstica e serve a SUT de terceiros | N (o duplo ciclo vai para o pack Python: P) | 2a / 6 |
-| Melhores práticas sempre | Tem a regra extra "investigação sob medida só quando a economia supera o custo; estimativa é rotulada" | Versão curta | **Somados** | N | 2a |
-| Ciclo de missão | Igual, e explicita que o handoff nunca depende do usuário | Igual | Somados; os passos de "início do chat" saem da regra para a skill `start-mission` e o hook `SessionStart` | N | 2b / 3 |
-| Gasto de tokens | Mais completo: docs web por seção, modelo fixo no chat, medir antes/depois, `AGENT_TOKEN_SPEND.md` | Resumo | **UAT** | N | 2a |
-| Seção de testes da stack | Duplo ciclo, hierarquia unit/integração/E2E | Hierarquia API/E2E, isolamento, localizadores, `test.fail` | Cada um na sua stack | P (isolamento e bug conhecido viram política: N) | 2a / 5 / 6 |
-| Espere o estado final | Princípio + tabela; tem a regra extra "estado final igual ao inicial: altere o inicial antes de agir" | Princípio + tabela | **UAT** no princípio; linhas da tabela por stack | N (linhas de CI/GitHub) + P (linhas da ferramenta) | 2a |
-| Diagnóstico de erros | Com exemplo concreto | Com as ferramentas do Playwright | Empate | N + exemplos no pack | 2a |
-| Comunicação | "Sempre pt-BR; código em inglês" | Mais preciso: commits e README em inglês | **kit** | N | 2a |
-| Dependências | Poetry; **duas fontes de vulnerabilidade** (Dependabot + `pip-audit`) | npm exato; `overrides` em vez de `audit fix --force`; conferir *peer dependencies* | Somados: princípios no núcleo (lock commitado, versão exata, major = decisão humana, duas fontes), comandos no pack | N + P | 2a |
-| Git e PR | Explica **por que** um PR aberto por vez (branch atualizada exigida) | Mais curto | **UAT** | N | 2a |
-| Princípios (Zen) | Idêntico | Idêntico | Empate | N | 2a |
-| Regras por caminho (`.claude/rules/` = `.github/instructions/`) | Sim: Python, Selenium, workflows, Poetry | **Não tem** | **UAT** | Mecanismo N; conteúdo P, exceto `workflows.md` (N, menos a linha do `pip-audit`) | 2a |
+| `CLAUDE.md` with `@import` | Identical (summary in `docs/ai-workflow/`) | Identical (summary in `docs/`) | Tie | C | 2a |
+| Golden rule (RED) | "TDD" + Behave/pytest double loop | "Every test was seen failing", with two paths: test before the support code, or mutation; also applies to gates | **kit**: stack-agnostic and fits third-party SUTs | C (the double loop goes to the Python pack: P) | 2a / 6 |
+| Always-on best practices | Has the extra rule "custom investigation only when the saving exceeds the cost; estimates are labeled" | Short version | **Combined** | C | 2a |
+| Mission cycle | Same, and states that handoff never depends on the user | Same | Combined; the "chat start" steps move from the rule to the `start-mission` skill and the `SessionStart` hook | C | 2b / 3 |
+| Token spend | More complete: web docs by section, fixed model per chat, measure before/after, `AGENT_TOKEN_SPEND.md` | Summary | **UAT** | C | 2a |
+| Stack testing section | Double loop, unit/integration/E2E hierarchy | API/E2E hierarchy, isolation, locators, `test.fail` | Each in its own stack | P (isolation and known bug become policy: C) | 2a / 5 / 6 |
+| Wait for the final state | Principle + table; has the extra rule "final state equal to the initial one: change the initial one before acting" | Principle + table | **UAT** for the principle; table rows per stack | C (CI/GitHub rows) + P (tool rows) | 2a |
+| Diagnosing errors | With a concrete example | With the Playwright tools | Tie | C + examples in the pack | 2a |
+| Communication | "Always pt-BR; code in English" | More precise: commits and README in English | **kit** | C | 2a |
+| Dependencies | Poetry; **two vulnerability sources** (Dependabot + `pip-audit`) | Exact npm; `overrides` instead of `audit fix --force`; check *peer dependencies* | Combined: principles in the core (committed lock, exact version, major = human decision, two sources), commands in the pack | C + P | 2a |
+| Git and PR | Explains **why** one open PR at a time (up-to-date branch required) | Shorter | **UAT** | C | 2a |
+| Principles (Zen) | Identical | Identical | Tie | C | 2a |
+| Path-scoped rules (`.claude/rules/` = `.github/instructions/`) | Yes: Python, Selenium, workflows, Poetry | **Missing** | **UAT** | Mechanism C; content P, except `workflows.md` (C, minus the `pip-audit` line) | 2a |
 
-## 2. Skills e agente
+## 2. Skills and agent
 
-| Peça | UAT | kit | Melhor | Cat. | Fase |
+| Piece | UAT | kit | Better | Cat. | Phase |
 | --- | --- | --- | --- | --- | --- |
-| `close-mission` | Sem "Portões verdes"; tem "fato surgido no merge vira issue, não PR novo"; passo de traduções do README (A) | Tem o passo 1 "Portões verdes" e o `git diff main...HEAD` explícito | **kit** + a frase final do UAT | N (`{{ cmd_check }}`) | 2b |
-| `ship-pr` | `merge_when_green.py` (187 linhas + testes, depende de Poetry) | **Auto-merge nativo** com `--match-head-commit` e laço de espera em shell; sem script | **kit**: menos código, nenhuma dependência de stack | N | 2b |
-| `reviewer` | 5 itens | 6 itens: **+ isolamento no ambiente compartilhado** | **kit** | N, com a linha "ignore o que X já impõe" como ponto de extensão do pack | 2b |
-| `start-mission` | Não tem | Não tem | Lacuna | N | 2b |
+| `close-mission` | No "Green gates"; has "a fact that surfaces at merge becomes an issue, not a new PR"; README translations step (A) | Has step 1 "Green gates" and the explicit `git diff main...HEAD` | **kit** + the UAT's closing sentence | C (`{{ cmd_check }}`) | 2b |
+| `ship-pr` | `merge_when_green.py` (187 lines + tests, depends on Poetry) | **Native auto-merge** with `--match-head-commit` and a shell wait loop; no script | **kit**: less code, no stack dependency | C | 2b |
+| `reviewer` | 5 items | 6 items: **+ isolation in the shared environment** | **kit** | C, with the line "ignore what X already enforces" as the pack's extension point | 2b |
+| `start-mission` | Missing | Missing | Gap | C | 2b |
 
-As três primeiras linhas valem como histórico: a Missão A (#14) levou essas peças para o plugin `mission`, comparando as quatro versões abaixo, e o vínculo com os comandos passou a ser a tabela de contratos de cada projeto, não `{{ cmd_check }}` ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)).
+The first three rows stand as history: Mission A (#14) moved these pieces into the `mission` plugin, comparing the four versions below, and the link to the commands became each project's contracts table, not `{{ cmd_check }}` ([ADR 0004](adr/0004-partial-resumption-with-a-plugin.md)).
 
-### Missão A: as quatro versões das peças do plugin
+### Mission A: the four versions of the plugin pieces
 
-Comparação de 17/11/2026 entre kit, UAT, nextjs e este repositório (**tpl**). Nenhum hash coincide em `close-mission` e `reviewer`; `ship-pr` (e `.claude/settings.json`) é idêntico entre kit e nextjs, e este repositório não tem `ship-pr`. "Novo" marca o que nenhuma versão tinha.
+Comparison of 2026-11-17 between kit, UAT, nextjs and this repository (**tpl**). No hash matches for `close-mission` and `reviewer`; `ship-pr` (and `.claude/settings.json`) is identical between kit and nextjs, and this repository has no `ship-pr`. "New" marks what no version had.
 
 **`close-mission`**
 
-| Trecho | Versões | Vence | Por quê |
+| Passage | Versions | Wins | Why |
 | --- | --- | --- | --- |
-| Portões verdes | kit/nextjs: `npm run check`/`pnpm check` "e os testes"; UAT: comandos detalhados, "no estado final da branch", "portão vermelho se corrige antes do revisor, nunca se pula"; tpl: checks do template | **UAT** (as duas frases), com os contratos `check`, `test` e `smoke` | As frases são agnósticas; os comandos vão para a tabela de contratos |
-| Resumo de sessão | kit/nextjs/tpl: estado + seção "Missão N" com decisões, fontes, RED; UAT: só estado, histórico no corpo do PR; tpl: "decisão duradoura vai para ADR" | **UAT + tpl**: resumo só com estado; decisão duradoura em regra ou ADR | O resumo do UAT virou histórico (células de 1.200+ caracteres) antes de mudar; ADR 0004 §8 traz as fontes |
-| Caminho do resumo | `docs/` em kit/nextjs/tpl; `docs/ai-workflow/` no UAT | Contrato `session-summary` | Diverge por projeto, sem desempate |
-| README | Traduções no UAT (A); genérico nos demais | Genérico | O passo de traduções é do app |
-| Revisor | kit/nextjs/tpl: `git diff main...HEAD` salvo no scratchpad; UAT: "resumo incluído", "rode os portões de novo" | **Somados** + **novo:** o texto da issue também vai num arquivo | O revisor só tem `Read`, `Grep` e `Glob`: com o número da issue apenas, ele não consegue lê-la |
-| PR | kit/nextjs/tpl: `Closes #N`, "peça o merge"; UAT: segue `.github/pull_request_template.md` e os formulários de issue, pede `/ship-pr` | **UAT** (condicional: "se existir") + **novo:** o corpo do PR é o registro da missão, e a skill confere que o squash usa a descrição do PR | Sem `PR_BODY`, o registro não chega ao Git: o UAT usa `COMMIT_MESSAGES` hoje (achado para a Missão C2, #23) |
-| Pós-merge | UAT/tpl: "fato surgido no merge vira issue, não PR novo" | **UAT/tpl** | Evita PR só de registro |
+| Green gates | kit/nextjs: `npm run check`/`pnpm check` "and the tests"; UAT: detailed commands, "on the final state of the branch", "a red gate is fixed before the reviewer, never skipped"; tpl: template checks | **UAT** (both sentences), with the `check`, `test` and `smoke` contracts | The sentences are stack-agnostic; the commands go to the contracts table |
+| Session summary | kit/nextjs/tpl: state + a "Mission N" section with decisions, sources, RED; UAT: state only, history in the PR body; tpl: "a lasting decision goes to an ADR" | **UAT + tpl**: summary with state only; lasting decision in a rule or ADR | The UAT summary had turned into history (cells of 1,200+ characters) before it changed; ADR 0004 §8 has the sources |
+| Summary path | `docs/` in kit/nextjs/tpl; `docs/ai-workflow/` in the UAT | `session-summary` contract | Differs per project, no tie-breaker |
+| README | Translations in the UAT (A); generic in the others | Generic | The translations step belongs to the app |
+| Reviewer | kit/nextjs/tpl: `git diff main...HEAD` saved to the scratchpad; UAT: "summary included", "run the gates again" | **Combined** + **new:** the issue text also goes in a file | The reviewer only has `Read`, `Grep` and `Glob`: with just the issue number, it cannot read it |
+| PR | kit/nextjs/tpl: `Closes #N`, "ask for the merge"; UAT: follows `.github/pull_request_template.md` and the issue forms, asks for `/ship-pr` | **UAT** (conditional: "if it exists") + **new:** the PR body is the mission record, and the skill checks that the squash uses the PR description | Without `PR_BODY`, the record does not reach Git: the UAT uses `COMMIT_MESSAGES` today (finding for Mission C2, #23) |
+| After merge | UAT/tpl: "a fact that surfaces at merge becomes an issue, not a new PR" | **UAT/tpl** | Avoids a PR just for the record |
 
 **`ship-pr`**
 
-| Trecho | Versões | Vence | Por quê |
+| Passage | Versions | Wins | Why |
 | --- | --- | --- | --- |
-| Mecanismo | kit/nextjs: auto-merge nativo + laço em shell; UAT: auto-merge nativo + `scripts/wait_for_merge.py` (Poetry) | **kit/nextjs** | Nenhuma dependência de stack; o script do UAT existe também para avisar de checks do Codecov (A) |
-| `UNKNOWN` | kit: "até sair" (sem limite); UAT: no máximo 3 leituras, depois para e reporta | **UAT** | *Fail fast*: estado que não resolve não vira espera infinita |
-| `BEHIND`/`DIRTY` | kit: age na primeira leitura; UAT: confirma numa segunda (#160, um merge em andamento mostra esses estados por um instante) | **UAT** + **novo:** `DIRTY` resolvido por merge da branch principal, nunca rebase + force push | Evidência de falha real no UAT; o merge veio do piloto no kit (#19): as travas negam force push |
-| Conclusões aceitas do `gate` | kit: só `success`; UAT: `success`, `skipped`, `neutral` | **UAT** | São as que o GitHub aceita num check obrigatório; o predicado do kit para a espera como se o check tivesse falhado (mutação registrada no commit) |
-| Depois de falha | UAT: o auto-merge continua ligado; `--disable-auto` para impedir | **UAT** | Um re-run verde integra sozinho; o usuário precisa saber |
-| Espera interrompida e limite da sessão | Só o UAT trata | **UAT** | Tarefa em segundo plano morre com a sessão |
-| Branch e check | Fixos: `main`/`master`, `ci-passed` | Contratos `main-branch` e `gate` | O UAT usa `master` |
-| Check obrigatório além do `gate` | UAT exige também `pip-audit`; nenhuma versão espera por ele | Lacuna: o `timeout` nomeia o check | Missão C2 (#23) decide entre juntá-lo ao gate ou esperar por ele |
+| Mechanism | kit/nextjs: native auto-merge + shell loop; UAT: native auto-merge + `scripts/wait_for_merge.py` (Poetry) | **kit/nextjs** | No stack dependency; the UAT script also exists to warn about Codecov checks (A) |
+| `UNKNOWN` | kit: "until it leaves" (no limit); UAT: at most 3 reads, then stops and reports | **UAT** | *Fail fast*: a state that does not resolve does not become an endless wait |
+| `BEHIND`/`DIRTY` | kit: acts on the first read; UAT: confirms on a second one (#160, a merge in progress shows these states for an instant) | **UAT** + **new:** `DIRTY` resolved by merging the main branch, never rebase + force push | Evidence of a real failure in the UAT; the merge came from the kit pilot (#19): the rulesets deny force push |
+| Accepted `gate` conclusions | kit: only `success`; UAT: `success`, `skipped`, `neutral` | **UAT** | They are the ones GitHub accepts on a required check; the kit's predicate stops the wait as if the check had failed (mutation recorded in the commit) |
+| After a failure | UAT: auto-merge stays on; `--disable-auto` to prevent it | **UAT** | A green re-run merges by itself; the user needs to know |
+| Interrupted wait and session limit | Only the UAT handles it | **UAT** | A background task dies with the session |
+| Branch and check | Fixed: `main`/`master`, `ci-passed` | `main-branch` and `gate` contracts | The UAT uses `master` |
+| Required check besides the `gate` | UAT also requires `pip-audit`; no version waits for it | Gap: the `timeout` names the check | Mission C2 (#23) decides between joining it to the gate or waiting for it |
 
 **`reviewer`**
 
-| Trecho | Versões | Vence | Por quê |
+| Passage | Versions | Wins | Why |
 | --- | --- | --- | --- |
-| Onde estão as regras | Um caminho fixo diferente em cada um (`copilot-instructions.md`, `AGENTS.md` + `.claude/rules/`, `tests.md`, `docs/adr/`) | "Já estão no seu contexto" + `REVIEW.md` na raiz | Subagentes carregam a hierarquia do `CLAUDE.md`; `REVIEW.md` é a convenção da Anthropic para instruções só de revisão (ADR 0004) |
-| Espera do estado final | kit/nextjs: com exemplos de Playwright; UAT/tpl: genérico | **UAT/tpl** | Os exemplos de stack vão para o `REVIEW.md` de cada projeto |
-| Isolamento | kit: ambiente compartilhado; UAT: fixtures do Behave e workers; nextjs: banco novo por job; tpl: trocado por "arquitetura do template" | Núcleo genérico ("estado limpo, cria os próprios dados, não depende de ordem") | O específico vai para o `REVIEW.md` |
-| Itens próprios | nextjs: "app congelado"; tpl: "arquitetura do template" | `REVIEW.md` de cada projeto | Só valem em um projeto (Missões C e D) |
-| "Ignore o que X já impõe" | Lista de ferramentas por stack | Contrato `check` + `REVIEW.md` | Agnóstico |
-| Afirmação sobre ferramenta externa cita a fonte | Só tpl | **tpl** | Todas as regras proíbem citar de memória |
+| Where the rules are | A different fixed path in each (`copilot-instructions.md`, `AGENTS.md` + `.claude/rules/`, `tests.md`, `docs/adr/`) | "Already in your context" + `REVIEW.md` at the root | Subagents load the `CLAUDE.md` hierarchy; `REVIEW.md` is Anthropic's convention for review-only instructions (ADR 0004) |
+| Waiting for the final state | kit/nextjs: with Playwright examples; UAT/tpl: generic | **UAT/tpl** | The stack examples go to each project's `REVIEW.md` |
+| Isolation | kit: shared environment; UAT: Behave fixtures and workers; nextjs: new database per job; tpl: replaced by "template architecture" | Generic core ("clean state, creates its own data, does not depend on order") | The specifics go to `REVIEW.md` |
+| Own items | nextjs: "frozen app"; tpl: "template architecture" | Each project's `REVIEW.md` | They apply to one project only (Missions C and D) |
+| "Ignore what X already enforces" | List of tools per stack | `check` contract + `REVIEW.md` | Stack-agnostic |
+| A claim about an external tool cites the source | Only tpl | **tpl** | All the rules forbid citing from memory |
 
-**Trava de chat novo no `ship-pr` (#30, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma medição, não uma repetição. Em 8 transcripts de missões de um projeto que usa o plugin, o `ship-pr` rodou no fim do chat da implementação, com 100k a 290k tokens de contexto, e reenviou esse contexto em cada uma das suas 36 a 95 chamadas. Num chat novo (cerca de 50k tokens fixos), cada missão custaria de 6% a 14% menos (10% em média). O `/clear` antes do `ship-pr` é hábito, e hábito falha; por isso vira hook do plugin, ao lado da skill que ele protege.
+**Fresh-chat guard on `ship-pr` (#30, 2026-11-19).** A new piece, with no version in the source projects; the evidence is a measurement, not a repetition. In 8 mission transcripts of a project that uses the plugin, `ship-pr` ran at the end of the implementation chat, with 100k to 290k tokens of context, and resent that context in each of its 36 to 95 calls. In a fresh chat (about 50k fixed tokens), each mission would cost 6% to 14% less (10% on average). Running `/clear` before `ship-pr` is a habit, and habits fail; so it becomes a plugin hook, next to the skill it protects.
 
-**Aviso de plugin desatualizado (#32, 19/11/2026).** Peça nova, sem versão nos projetos de origem; a evidência é uma observação. Depois do merge do #31, 4 dos 5 projetos que usam o plugin seguiam em versões antigas (`f845d1b`, `84b2bf3`), sem nenhum aviso. O `autoUpdate: false` é decisão (atualizar de propósito, revisando a mudança), então a peça é visibilidade, não atualização: um hook `SessionStart` que compara a versão instalada com a publicada.
+**Outdated plugin warning (#32, 2026-11-19).** A new piece, with no version in the source projects; the evidence is an observation. After #31 merged, 4 of the 5 projects that use the plugin were still on old versions (`f845d1b`, `84b2bf3`), with no warning at all. `autoUpdate: false` is a decision (update on purpose, reviewing the change), so the piece is visibility, not updating: a `SessionStart` hook that compares the installed version with the published one.
 
-**Agente `researcher` e roteamento de modelos (#34, 20/11/2026).** Peças novas, sem versão nos projetos de origem; a evidência é uma regra já em uso e uma medição. A regra "consulte a documentação oficial antes de sugerir" vale nos quatro projetos e era cumprida pela sessão principal, no modelo mais caro; o pesquisador a cumpre num subagente com contexto próprio. O modelo dele saiu de uma suíte de `claude plugin eval` (5 perguntas, 3 execuções, gabarito fixado antes; um deles corrigido depois da primeira rodada, com o caso refeito): Sonnet empatou com Opus (1,000) a cerca de metade do custo, e Haiku ficou abaixo (0,983). O `reviewer` deixou de herdar o modelo da sessão e foi fixado em `opus`/`high`.
+**`researcher` agent and model routing (#34, 2026-11-20).** New pieces, with no version in the source projects; the evidence is a rule already in use and a measurement. The rule "check the official documentation before proposing" applies in all four projects and was followed by the main session, on the most expensive model; the researcher follows it in a subagent with its own context. Its model came from a `claude plugin eval` suite (5 questions, 3 runs, answer key fixed beforehand; one of them corrected after the first round, with the case re-run): Sonnet tied with Opus (1.000) at about half the cost, and Haiku came in lower (0.983). The `reviewer` stopped inheriting the session's model and was pinned to `opus`/`high`.
 
-**Gabarito do revisor (#38, 22/11/2026).** Peças novas, sem versão nos projetos de origem; a evidência é uma lacuna observada e a regra de ouro. Os corpos dos PRs integrados registram achados do revisor, quase todos aplicados, e nenhum defeito que ele deixou passar; o revisor é um portão e nunca tinha sido visto reprovando. A captura (falsos positivos e negativos em três listas no corpo do PR, label `reviewer-miss`) vale para todo projeto que usa o plugin; a suíte `evals/review/` reaproveita missões integradas deste repositório. Na construção apareceu outra lacuna: o revisor recebia só o `git diff`, sem as mensagens de commit, e não tem `git`, então nunca conseguia conferir o registro do RED; o `close-mission` passou a entregar as mensagens junto.
+**Reviewer answer key (#38, 2026-11-22).** New pieces, with no version in the source projects; the evidence is an observed gap and the golden rule. The bodies of the merged PRs record the reviewer's findings, almost all applied, and no defect it let through; the reviewer is a gate and had never been seen rejecting anything. The capture (false positives and negatives in three lists in the PR body, `reviewer-miss` label) applies to every project that uses the plugin; the `evals/review/` suite reuses merged missions of this repository. Building it exposed another gap: the reviewer received only the `git diff`, without the commit messages, and has no `git`, so it could never check the RED record; `close-mission` now hands the messages over too.
 
-## 3. Configuração e testes do próprio harness
+## 3. Configuration and tests of the harness itself
 
-| Peça | UAT | kit | Melhor | Cat. | Fase |
+| Piece | UAT | kit | Better | Cat. | Phase |
 | --- | --- | --- | --- | --- | --- |
-| `test_agent_rules.py` | Limite de 200 linhas, cópias Claude/Copilot iguais, metadados das skills, revisor só leitura | Não tem: nada impede o kit de passar das 200 linhas | **UAT** | N (os testes de LTeX/cSpell/pyright são P ou saem) | 2b |
-| `test_doc_links.py` | Barra link quebrado em `.md` | Não tem | **UAT** | N | 2b |
-| Hook `PreToolUse` que compacta a saída de testes | `filter_test_output.py` (`pytest -q`, `behave -f progress2`) | Não tem | **UAT** | P (o runner muda por stack; o kit pode usar `--reporter=line`) | 5 / 6 |
-| Plugin LSP | `pyright-lsp` | Não tem | **UAT** | P | 5 / 6 |
-| Permissões `allow`/`deny` | Não tem | Não tem | Lacuna: "nunca `--admin`" ainda é só texto | N | 3 |
-| Hook `SessionStart`, hook de segredos | Não tem | Não tem | Lacuna | N | 3 |
-| `.vscode/` versionado | Sim (cSpell `en,pt_BR,es`, extensões) | Não versionado | UAT | P (extensões por stack); fora até haver evidência de valor no núcleo | 5 / 6 |
+| `test_agent_rules.py` | 200-line limit, identical Claude/Copilot copies, skill metadata, read-only reviewer | Missing: nothing stops the kit from going past 200 lines | **UAT** | C (the LTeX/cSpell/pyright tests are P or go away) | 2b |
+| `test_doc_links.py` | Blocks broken links in `.md` | Missing | **UAT** | C | 2b |
+| `PreToolUse` hook that compacts test output | `filter_test_output.py` (`pytest -q`, `behave -f progress2`) | Missing | **UAT** | P (the runner changes per stack; the kit can use `--reporter=line`) | 5 / 6 |
+| LSP plugin | `pyright-lsp` | Missing | **UAT** | P | 5 / 6 |
+| `allow`/`deny` permissions | Missing | Missing | Gap: "never `--admin`" is still only text | C | 3 |
+| `SessionStart` hook, secrets hook | Missing | Missing | Gap | C | 3 |
+| Versioned `.vscode/` | Yes (cSpell `en,pt_BR,es`, extensions) | Not versioned | UAT | P (extensions per stack); out until there is evidence of value in the core | 5 / 6 |
 
-## 4. Documentação
+## 4. Documentation
 
-| Peça | UAT | kit | Melhor | Cat. | Fase |
+| Piece | UAT | kit | Better | Cat. | Phase |
 | --- | --- | --- | --- | --- | --- |
-| `PROJECT_SESSION_SUMMARY.md` | 137 linhas; a tabela de estado **virou histórico**: células com mais de 1.200 caracteres | Curto, com tabela de estado e **plano de missões** | **kit** na forma; o problema do UAT justifica os ADRs (decisão duradoura sai do resumo) | N (modelo) | 2a |
-| ADRs | Não tem | Não tem | Lacuna (este repositório já usa: `docs/adr/`) | N (modelo) | 2a |
-| `KNOWN_ISSUES.md` | Não tem | `KI-n` com esperado/observado/impacto/teste, e o aviso "confirme que o teste falha pelo motivo do bug" | **kit** | N (modelo) | 2a |
-| Relatório de spike | Não tem | Achados do spike dentro do resumo | kit (conteúdo); falta modelo próprio | N (modelo) | 2a |
-| Política de testes instáveis (flaky) | Improvisada no #129 (instrumentar, sem retry, citando Fowler) | `retries: 2` no CI, flaky visível no relatório | **Nenhum** tem política escrita, e os dois divergem (ver §8) | N | 2a |
-| `docs/ai-workflow/` (índice em inglês + `AGENT_TOKEN_SPEND.md`) | Sim | Não | **UAT** | N | 2a |
-| README em 3 idiomas + validador de métricas (452 linhas) | Sim | Não | — | A/opcional: fora (YAGNI) | — |
+| `PROJECT_SESSION_SUMMARY.md` | 137 lines; the state table **turned into history**: cells with more than 1,200 characters | Short, with a state table and a **mission plan** | **kit** in shape; the UAT's problem justifies the ADRs (lasting decisions leave the summary) | C (template) | 2a |
+| ADRs | Missing | Missing | Gap (this repository already uses them: `docs/adr/`) | C (template) | 2a |
+| `KNOWN_ISSUES.md` | Missing | `KI-n` with expected/observed/impact/test, and the warning "confirm that the test fails for the reason of the bug" | **kit** | C (template) | 2a |
+| Spike report | Missing | Spike findings inside the summary | kit (content); its own template is missing | C (template) | 2a |
+| Flaky test policy | Improvised in #129 (instrument, no retry, citing Fowler) | `retries: 2` in CI, flaky visible in the report | **Neither** has a written policy, and they diverge (see §8) | C | 2a |
+| `docs/ai-workflow/` (English index + `AGENT_TOKEN_SPEND.md`) | Yes | No | **UAT** | C | 2a |
+| README in 3 languages + metrics validator (452 lines) | Yes | No | — | A/optional: out (YAGNI) | — |
 
-## 5. CI e GitHub
+## 5. CI and GitHub
 
-| Peça | UAT | kit | Melhor | Cat. | Fase |
+| Piece | UAT | kit | Better | Cat. | Phase |
 | --- | --- | --- | --- | --- | --- |
-| Gate `ci-passed` (único check obrigatório, `always()`, lista de permissão) | `check_needs.py` + `test_ci_gate.py` (Python) | Inline em `yq`/`jq`, e **confere que o gate depende de todo job** | **kit**: sem dependência de stack | N | D (#28) neste repo · 2b |
-| Actions fixadas por SHA | Sim, **cobrado** por `test_workflow_pinning.py` | Sim, mas nada cobra | **UAT** (cobrança); avaliar se o zizmor substitui o teste | N | 3 |
-| Endurecimento do workflow | `permissions: contents: read`; **sem** `concurrency` no nível do workflow (só no job de deploy do Pages), `persist-credentials: false` e `timeout-minutes` | Os quatro | **kit** | N | 1 |
-| Dependabot | Agrupado; ecossistema `docker-compose` | Agrupado + **`cooldown` de 7 dias** + `versioning-strategy` | **kit** (bloco `github-actions` no núcleo, bloco do ecossistema no pack) | N + P | 4 / 5 / 6 |
-| Sentinela de `ignore` do Dependabot | Não tem | `check-dependency-ignores.ts` reprova o `check` quando o ignore caduca | **kit** | Padrão N, implementação P | 5 |
-| Segunda fonte de vulnerabilidades, diária | `pip-audit --strict` (PR + diário) | **Não tem** | **UAT** | Padrão N, implementação P | 5 / 6 |
-| Hooks locais antes do commit | `pre-commit` (rodado também no CI) | Não tem | **UAT**, com ressalva: `rev: v5.0.0` por tag (contradiz a regra de SHA) e o repositório `pre-commit-hooks` repetido | P | 6 |
-| Checagem de encoding (UTF-8, sem NUL) | `check_text_encoding.py` (o `.gitignore` em UTF-16, gerado pelo PowerShell, não casava nada, #26) | Não tem | **UAT**; o problema é do Windows, não da stack | N | 3 |
-| Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Empate; o núcleo usa `main` | N | Este repo: Missão D (#28), como código em `.github/rulesets/` · projeto gerado: 4 |
-| Labels `priority: P0/P1/P2` | Iguais | Iguais | Empate | N | Este repo: 0 · projeto gerado: 4 |
-| Config do repositório (só squash, auto-merge, título/corpo do PR) | Auto-merge desligado | Configurado | kit | N | Este repo: 0 · projeto gerado: 4 |
-| Modelos de issue e PR | Não tem | Não tem | Lacuna | N | 4 |
-| `.gitattributes` | `* text=auto` (rejeitou `eol=lf`) | `* text=auto eol=lf` (Prettier exige LF) | Divergem (ver §8) | N | 2a |
-| Relatório publicado | Allure no Pages + Codecov via OIDC | Planejado (Missão 6 do kit) | UAT | P | 5 / 6 |
-| Selenium Grid em `compose.yaml` por digest, mesma fonte local e CI | Sim (*dev/prod parity*) | — | UAT | P | 6 |
+| `ci-passed` gate (single required check, `always()`, allow list) | `check_needs.py` + `test_ci_gate.py` (Python) | Inline in `yq`/`jq`, and **checks that the gate depends on every job** | **kit**: no stack dependency | C | D (#28) in this repo · 2b |
+| Actions pinned by SHA | Yes, **enforced** by `test_workflow_pinning.py` | Yes, but nothing enforces it | **UAT** (enforcement); assess whether zizmor replaces the test | C | 3 |
+| Workflow hardening | `permissions: contents: read`; **no** workflow-level `concurrency` (only in the Pages deploy job), `persist-credentials: false` or `timeout-minutes` | All four | **kit** | C | 1 |
+| Dependabot | Grouped; `docker-compose` ecosystem | Grouped + **7-day `cooldown`** + `versioning-strategy` | **kit** (`github-actions` block in the core, ecosystem block in the pack) | C + P | 4 / 5 / 6 |
+| Dependabot `ignore` sentinel | Missing | `check-dependency-ignores.ts` fails `check` when the ignore expires | **kit** | Pattern C, implementation P | 5 |
+| Second vulnerability source, daily | `pip-audit --strict` (PR + daily) | **Missing** | **UAT** | Pattern C, implementation P | 5 / 6 |
+| Local hooks before commit | `pre-commit` (also run in CI) | Missing | **UAT**, with a caveat: `rev: v5.0.0` by tag (contradicts the SHA rule) and the `pre-commit-hooks` repository repeated | P | 6 |
+| Encoding check (UTF-8, no NUL) | `check_text_encoding.py` (the `.gitignore` in UTF-16, generated by PowerShell, matched nothing, #26) | Missing | **UAT**; the problem is Windows', not the stack's | C | 3 |
+| Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Tie; the core uses `main` | C | This repo: Mission D (#28), as code in `.github/rulesets/` · generated project: 4 |
+| `priority: P0/P1/P2` labels | Same | Same | Tie | C | This repo: 0 · generated project: 4 |
+| Repository config (squash only, auto-merge, PR title/body) | Auto-merge off | Configured | kit | C | This repo: 0 · generated project: 4 |
+| Issue and PR templates | Missing | Missing | Gap | C | 4 |
+| `.gitattributes` | `* text=auto` (rejected `eol=lf`) | `* text=auto eol=lf` (Prettier requires LF) | They diverge (see §8) | C | 2a |
+| Published report | Allure on Pages + Codecov via OIDC | Planned (kit Mission 6) | UAT | P | 5 / 6 |
+| Selenium Grid in `compose.yaml` by digest, same source locally and in CI | Yes (*dev/prod parity*) | — | UAT | P | 6 |
 
-## 6. Código de teste
+## 6. Test code
 
-### Infraestrutura (vai para o pack)
+### Infrastructure (goes to the pack)
 
-| Peça | UAT | kit | Melhor | Cat. |
+| Piece | UAT | kit | Better | Cat. |
 | --- | --- | --- | --- | --- |
-| Configuração | `config.yaml` commitado com URL e senha; hierarquia CLI > env > YAML feita à mão (`config_resolver.py`, 172 linhas); sem validação: chave ausente estoura `KeyError` no uso | Variáveis de ambiente validadas com zod na inicialização (*fail fast*, mensagem cita a variável); `.env.example`; o shell vence o `.env` | **kit** (Twelve-Factor, fator III) | Contrato N, implementação P |
-| Config do runner | — | `forbidOnly` no CI; trace desligado no CI porque gravaria a senha em texto puro (decisão documentada) | **kit** | P |
-| Evidência de falha | Screenshot + URL no Allure; artefatos de integração no CI (#129) | `expectJson` falha com URL + corpo da resposta | Os dois; o contrato é "a falha traz evidência para diagnosticar sem reproduzir" | Contrato N, implementação P |
-| Smoke | `smoke.feature` com `@smoke`, mas acoplado ao Sauce Demo | Não tem | Lacuna nos dois: smoke = "SUT alcançável" | Contrato N, implementação P |
+| Configuration | `config.yaml` committed with URL and password; CLI > env > YAML hierarchy written by hand (`config_resolver.py`, 172 lines); no validation: a missing key raises `KeyError` at use | Environment variables validated with zod at startup (*fail fast*, the message names the variable); `.env.example`; the shell wins over `.env` | **kit** (Twelve-Factor, factor III) | Contract C, implementation P |
+| Runner config | — | `forbidOnly` in CI; trace off in CI because it would record the password in plain text (documented decision) | **kit** | P |
+| Failure evidence | Screenshot + URL in Allure; integration artifacts in CI (#129) | `expectJson` fails with URL + response body | Both; the contract is "the failure carries evidence to diagnose without reproducing" | Contract C, implementation P |
+| Smoke | `smoke.feature` with `@smoke`, but coupled to Sauce Demo | Missing | Gap in both: smoke = "SUT reachable" | Contract C, implementation P |
 
-### Convenções (só a forma vai para o pack)
+### Conventions (only the shape goes to the pack)
 
-| Peça | UAT | kit | Melhor | Cat. |
+| Piece | UAT | kit | Better | Cat. |
 | --- | --- | --- | --- | --- |
-| Pastas | `core/`, `pages/`, `features/steps/`, `tests/{unit,integration,helpers}` | `src/{api,config,data}`, `tests/{api}`, `tests/fixtures.ts` | Cada um na sua stack | P (pastas vazias com README) |
-| Bug conhecido do app | Cenário **afirma o defeito** (`problem_user` vê o produto errado). Legítimo no Sauce Demo, onde o defeito é intencional, mas generalizado transforma bug em comportamento esperado | `test.fail()` **afirma o comportamento correto** e aponta para `KNOWN_ISSUES.md`; avisa quando o bug é corrigido | **kit** | Política N, marcação P |
-| Isolamento de dados | Usuários fixos pré-cadastrados (o Sauce Demo não guarda estado entre sessões) | Fixture cria dados únicos por teste (ambiente compartilhado) | **kit** como regra geral | Política N |
+| Folders | `core/`, `pages/`, `features/steps/`, `tests/{unit,integration,helpers}` | `src/{api,config,data}`, `tests/{api}`, `tests/fixtures.ts` | Each in its own stack | P (empty folders with a README) |
+| Known app bug | The scenario **asserts the defect** (`problem_user` sees the wrong product). Legitimate on Sauce Demo, where the defect is intentional, but generalized it turns a bug into expected behavior | `test.fail()` **asserts the correct behavior** and points to `KNOWN_ISSUES.md`; warns when the bug is fixed | **kit** | Policy C, marking P |
+| Data isolation | Fixed pre-registered users (Sauce Demo keeps no state between sessions) | A fixture creates unique data per test (shared environment) | **kit** as the general rule | Policy C |
 
-### Abstrações do domínio (ficam de fora)
+### Domain abstractions (stay out)
 
-`BasePage` (249 linhas), page objects, steps e features do UAT; clientes de API, schemas zod, `factories.ts` e specs do kit. Dependem do app (**A**). As **ideias** reaproveitáveis delas já estão nas regras, não no código: esperar a página de destino após navegar em SPA, remover o erro antigo antes de reenviar um formulário, esperar o elemento parar de se mover (`wait_until_stable`, o *actionability check* "Stable" do Playwright).
+`BasePage` (249 lines), page objects, steps and features of the UAT; API clients, zod schemas, `factories.ts` and specs of the kit. They depend on the app (**A**). Their reusable **ideas** are already in the rules, not in the code: wait for the destination page after navigating in a SPA, remove the old error before resubmitting a form, wait for the element to stop moving (`wait_until_stable`, Playwright's "Stable" *actionability check*).
 
-### Qualidade dos testes (vai para o backlog da Fase 8)
+### Test quality (goes to the Phase 8 backlog)
 
-- **UAT, testes que repetem o código.** Exemplo: `assert LoginPage.USERNAME_INPUT == (By.ID, "user-name")` em `tests/test_login_page.py`. Teste assim quebra em toda refatoração e não pega bug nenhum: é o *change-detector test* (Google Testing Blog, "Change-Detector Tests Considered Harmful"). Os unitários de page object com `Mock` conferem que `type()` foi chamado com o localizador, ou seja, testam a implementação, enquanto os 96 testes de integração com navegador real já cobrem o contrato com o DOM. Os 656 unitários estão inflados por esse padrão. Candidatos à remoção, avaliados um a um na Missão 8b.
-- **UAT, configuração.** URL e senha no `config.yaml` funcionam para um demo público, mas o padrão não serve para um cliente real: migrar para variáveis de ambiente validadas, como no kit.
-- **kit, segurança.** Sem segunda fonte de vulnerabilidades (`npm audit` ou equivalente) e sem portão local antes do commit.
-- **kit, harness defasado.** Sem regras por caminho, sem testes do harness, sem hook de saída, sem LSP (§1 e §3; a adoção do template na Missão 8a resolve).
+- **UAT, tests that repeat the code.** Example: `assert LoginPage.USERNAME_INPUT == (By.ID, "user-name")` in `tests/test_login_page.py`. A test like that breaks on every refactor and catches no bug: it is the *change-detector test* (Google Testing Blog, "Change-Detector Tests Considered Harmful"). The page object unit tests with `Mock` check that `type()` was called with the locator, that is, they test the implementation, while the 96 integration tests with a real browser already cover the contract with the DOM. The 656 unit tests are inflated by this pattern. Candidates for removal, assessed one by one in Mission 8b.
+- **UAT, configuration.** URL and password in `config.yaml` work for a public demo, but the pattern does not fit a real client: migrate to validated environment variables, as in the kit.
+- **kit, security.** No second vulnerability source (`npm audit` or equivalent) and no local gate before commit.
+- **kit, outdated harness.** No path-scoped rules, no harness tests, no output hook, no LSP (§1 and §3; adopting the template in Mission 8a solves it).
 
-## 7. Lacunas nos dois projetos
+## 7. Gaps in both projects
 
-Nenhum dos dois tem, e o template passa a ter:
+Neither has them, and the template will:
 
-| Lacuna | Fase |
+| Gap | Phase |
 | --- | --- |
-| Permissões `allow`/`deny` no `.claude/settings.json` (`--admin`, `push --force`, push na `main`) | 3 |
-| Hook `SessionStart` (resumo + issues abertas) e hook que bloqueia leitura/edição de `.env` | 3 |
-| gitleaks e zizmor no CI; Scorecard | 3 / 7 |
-| Modelos de issue (missão com critérios de aceite) e de PR | 4 |
-| Skills `start-mission` e `/new-project` (labels, ruleset, issues do plano) | 2b / 4 |
-| ADRs, política de flaky, modelo de relatório de spike | 2a |
-| CI do próprio template, que gera um projeto por pack e o valida | 1 |
+| `allow`/`deny` permissions in `.claude/settings.json` (`--admin`, `push --force`, push to `main`) | 3 |
+| `SessionStart` hook (summary + open issues) and a hook that blocks reading/editing `.env` | 3 |
+| gitleaks and zizmor in CI; Scorecard | 3 / 7 |
+| Issue templates (mission with acceptance criteria) and PR template | 4 |
+| `start-mission` and `/new-project` skills (labels, ruleset, plan issues) | 2b / 4 |
+| ADRs, flaky policy, spike report template | 2a |
+| CI for the template itself, generating one project per pack and validating it | 1 |
 
-## 8. Decisões que ficam para a missão da fase
+## 8. Decisions left to the phase's mission
 
-- **Fim de linha (2a).** O UAT rejeitou `eol=lf` porque força LF no disco do Windows; o kit precisa dele porque o Prettier exige LF. Este repositório usa `eol=lf` (os editores atuais lidam bem com LF no Windows). Confirmar com a documentação do Git antes de pôr no núcleo.
-- **Retries no CI (2a, política de flaky).** O kit usa `retries: 2` e confia no relatório para mostrar o flaky; o UAT recusou retry no #129 citando Fowler ("rodar de novo até passar torna o teste inútil"). A política precisa decidir com fontes, e o que o núcleo exige é que a instabilidade fique **visível e rastreada** (issue), seja qual for o mecanismo.
-- **O harness deste repositório (2a/2b).** Para trabalhar por missões desde já, este repositório tem uma cópia mínima do harness do kit (`CLAUDE.md`, regras, `close-mission`, `reviewer`). É a terceira cópia à mão, o próprio problema que o template resolve. A Fase 2 deve fazer este repositório usar o núcleo (*dogfooding*): gerado por ele, ou com um teste que compara as duas versões. **Atualização (Missão D, #17):** `close-mission`, `ship-pr` e `reviewer` já vêm do plugin `mission`, instalado do próprio repositório; ficam à mão só `CLAUDE.md` e as regras, que a Fase 2 resolve.
+- **Line endings (2a).** The UAT rejected `eol=lf` because it forces LF on the Windows disk; the kit needs it because Prettier requires LF. This repository uses `eol=lf` (current editors handle LF well on Windows). Confirm with the Git documentation before putting it in the core.
+- **Retries in CI (2a, flaky policy).** The kit uses `retries: 2` and relies on the report to show the flaky test; the UAT refused retries in #129 citing Fowler ("re-running until it passes makes the test useless"). The policy has to decide with sources, and what the core requires is that the instability stays **visible and tracked** (an issue), whatever the mechanism.
+- **This repository's harness (2a/2b).** To work in missions right away, this repository has a minimal copy of the kit's harness (`CLAUDE.md`, rules, `close-mission`, `reviewer`). It is the third hand-made copy, the very problem the template solves. Phase 2 should make this repository use the core (*dogfooding*): generated by it, or with a test that compares the two versions. **Update (Mission D, #17):** `close-mission`, `ship-pr` and `reviewer` now come from the `mission` plugin, installed from this repository; only `CLAUDE.md` and the rules remain hand-made, which Phase 2 resolves.

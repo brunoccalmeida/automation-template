@@ -1,41 +1,39 @@
-<!-- LTeX: language=pt-BR -->
+# automation-template - Project rules
 
-# automation-template - Regras do projeto
+Rules for this repository only. The ones that apply to every project are in [`.claude/rules/core.md`](.claude/rules/core.md), which comes from the template and is not edited here.
 
-Regras só deste repositório. As que valem em todo projeto ficam em [`.claude/rules/core.md`](.claude/rules/core.md), que vem do template e não se edita aqui.
+## Contracts
 
-## Contratos
+Values that the core and the [`mission`](plugins/mission/README.md) plugin use in this repository. The artifact published today is the plugin itself, so `check` is its validation and `test` is the tests of its hooks, until Mission 1 (#2) brings the template's tests.
 
-Valores que o núcleo e o plugin [`mission`](plugins/mission/README.md) usam neste repositório. O artefato publicado hoje é o próprio plugin, então `check` é a validação dele e `test`, os testes dos seus hooks, até a Missão 1 (#2) trazer os testes do template.
-
-| Contrato | Valor |
+| Contract | Value |
 | --- | --- |
-| `check` | `npm ci --prefix .github/tools/claude-cli` uma vez, depois `python3 .github/scripts/validate_plugins.py` (no Windows, passe ao script o caminho absoluto de `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
-| `test` | `python3 -m unittest discover -s tests` (testes dos hooks do plugin; precisam de `sh` e `git` no `PATH` e falham sem eles; no Windows, `python` ou `py -3`, com o Git Bash no `PATH`) |
-| `smoke` | Nenhum: ainda não há template para gerar um projeto (Missão 1, #2) |
+| `check` | `npm ci --prefix .github/tools/claude-cli` once, then `python3 .github/scripts/validate_plugins.py` (on Windows, pass the script the absolute path of `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
+| `test` | `python3 -m unittest discover -s tests` (tests of the plugin's hooks; they need `sh` and `git` on the `PATH` and fail without them; on Windows, `python` or `py -3`, with Git Bash on the `PATH`) |
+| `smoke` | None: there is no template to generate a project from yet (Mission 1, #2) |
 | `main-branch` | `main` |
 | `gate` | `ci-passed` |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |
 
-## Exceções ao núcleo
+## Exceptions to the core
 
-- **"Everything written to the repository is in English":** os arquivos marcados com `LTeX: language=pt-BR` (regras e documentos internos, e as skills e agentes do plugin) continuam em português (Brasil) até a #46 traduzi-los; quem edita um deles escreve em português. Por quê: traduzir é uma missão própria; misturar idiomas no mesmo documento seria pior que esperar.
+- **"Everything written to the repository is in English":** the plugin's skills and agents (`plugins/mission/skills/`, `plugins/mission/agents/`, marked `LTeX: language=pt-BR`) and the messages its hooks show (`plugins/mission/scripts/`) stay in Brazilian Portuguese until #48 translates them; whoever edits one writes in Portuguese. The eval fixtures under `plugins/mission/evals/review/` are historical diffs and stay as they were. Why: the skills and agents are prompts, and the reviewer's and researcher's model choices were measured against the Portuguese text (#34, #38), so translating them needs a new measurement; the hook messages go with them so that every project updates the plugin once, not twice.
 
-## Regras de arquitetura do template
+## Template architecture rules
 
-Este repositório é um template [Copier](https://copier.readthedocs.io/) para projetos de automação de testes: um **núcleo** que todo projeto herda e um **pack** por ferramenta (`ts-playwright`, `python-behave-selenium`). As decisões estão em `docs/adr/`; a evidência do que entra, em `docs/INVENTORY.md`.
+This repository is a [Copier](https://copier.readthedocs.io/) template for test automation projects: a **core** that every project inherits and one **pack** per tool (`ts-playwright`, `python-behave-selenium`). The decisions are in `docs/adr/`; the evidence for what goes in, in `docs/INVENTORY.md`.
 
-- **O núcleo não cita stack** (ferramenta, linguagem, tipo de alvo): define contratos que cada pack implementa via variáveis do Copier ([ADR 0003](docs/adr/0003-stack-agnostic-core-defines-contracts.md)).
-- **Pack por ferramenta, não por tipo de teste**; tipo de teste é opção dentro do pack ([ADR 0002](docs/adr/0002-core-plus-packs-split-by-tool.md)).
-- **Walking skeleton, sem abstração do domínio:** infraestrutura, convenções como pastas documentadas e um smoke; nada de `BasePage`, page objects, clientes de API ou autenticação.
-- **Entra por evidência:** o que não estiver comprovado nos projetos de origem fica de fora (regra de três).
-- **Separe o que é do template do que é do projeto gerado:** o projeto acrescenta arquivos próprios em vez de editar os do template, para o `copier update` não gerar conflito.
-- **O template se testa gerando um projeto:** ele não roda sozinho; o teste gera um projeto e valida o resultado.
+- **The core names no stack** (tool, language, target type): it defines contracts that each pack implements through Copier variables ([ADR 0003](docs/adr/0003-stack-agnostic-core-defines-contracts.md)).
+- **One pack per tool, not per test type**; the test type is an option inside the pack ([ADR 0002](docs/adr/0002-core-plus-packs-split-by-tool.md)).
+- **Walking skeleton, no domain abstraction:** infrastructure, conventions as documented folders, and one smoke; no `BasePage`, page objects, API clients or authentication.
+- **Evidence first:** what is not proven in the source projects stays out (rule of three).
+- **Keep what belongs to the template apart from what belongs to the generated project:** the project adds its own files instead of editing the template's, so `copier update` does not conflict.
+- **The template is tested by generating a project:** it does not run on its own; the test generates a project and validates the result.
 
-## Ruleset como código
+## Ruleset as code
 
-[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) descreve o ruleset ativo (id 27584439), mas editar o arquivo não muda o GitHub. Mudou o arquivo: aplique com `gh api -X PUT repos/{owner}/{repo}/rulesets/27584439 --input .github/rulesets/protect-main.json` e confira com `gh api repos/{owner}/{repo}/rulesets/27584439`; mudou na interface: traga a mudança para o arquivo. A checagem automática de divergência fica para a Missão 4 (#6).
+[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) describes the active ruleset (id 27584439), but editing the file does not change GitHub. Changed the file: apply it with `gh api -X PUT repos/{owner}/{repo}/rulesets/27584439 --input .github/rulesets/protect-main.json` and check with `gh api repos/{owner}/{repo}/rulesets/27584439`; changed it in the web interface: bring the change into the file. The automatic drift check is left to Mission 4 (#6).
 
-## Mudança no próprio plugin
+## Changes to the plugin itself
 
-A missão é fechada pela versão publicada (instalada do GitHub, `autoUpdate: false`), não pela da branch. Para experimentar a da branch, abra uma sessão com `claude --plugin-dir ./plugins/mission`, que sobrepõe a instalada só nessa sessão ([Plugin loading reference](https://code.claude.com/docs/en/plugins/loading.md#name-conflicts)). Depois do merge, `claude plugin update mission@brunoccalmeida-plugins`.
+The mission is closed by the published version (installed from GitHub, `autoUpdate: false`), not by the branch's. To try the branch's version, start a session with `claude --plugin-dir ./plugins/mission`, which overrides the installed one for that session only ([Plugin loading reference](https://code.claude.com/docs/en/plugins/loading.md#name-conflicts)). After the merge, `claude plugin update mission@brunoccalmeida-plugins`.
