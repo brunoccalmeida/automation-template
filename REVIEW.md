@@ -2,7 +2,7 @@
 
 # Instruções de revisão
 
-Verificações próprias deste repositório, lidas pelo `mission:reviewer` além da lista dele. Regras gerais ficam em `.github/copilot-instructions.md`, que o revisor já carrega.
+Verificações próprias deste repositório, lidas pelo `mission:reviewer` além da lista dele. Regras gerais ficam em `.claude/rules/core.md` e no `CLAUDE.md`, que o revisor já carrega.
 
 ## Sempre verifique
 
