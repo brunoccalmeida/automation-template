@@ -41,6 +41,6 @@ Facts, all from the [Permissions](https://code.claude.com/docs/en/permissions.md
 
 ## Consequences
 
-- The deny rules are tested against the documented matching semantics ([`tests/test_project_settings.py`](../../tests/test_project_settings.py)), and some were tried in Claude Code 2.1.327 itself: the Bash rules for `--force` and `--admin` and `cat .env` were seen blocking, and `cat .env.example` and a plain push ran. The PowerShell rules, the `+` and trailing `-f` forms and the Read tool on `.env` were not seen blocking in Claude Code; the mission record lists them. A deny rule that becomes wrong in a future Claude Code version only shows up when someone runs those commands again.
+- The deny rules are tested against the documented matching semantics ([`tests/test_project_settings.py`](../../tests/test_project_settings.py)), and every rule was seen blocking in Claude Code 2.1.327 itself, under `bypassPermissions`: each force push form and `--admin` in Bash and PowerShell, `cat .env`, and the Read and Edit tools on `.env` and `config/.env`; `.env.example` and a plain push went through. The mission record lists the commands. A deny rule that becomes wrong in a future Claude Code version only shows up when someone runs those commands again.
 - The source projects keep their longer lists until they adopt the template (#10, #11); the extra rules are harmless.
 - Each new session and each `/clear` runs `gh` twice. Without network or `gh` authentication, the hook says so in the context instead of listing.
