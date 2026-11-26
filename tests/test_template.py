@@ -263,8 +263,10 @@ class GeneratedProjectTest(unittest.TestCase):
     def test_core_names_no_stack(self) -> None:
         pattern = re.compile(r"\b(" + "|".join(map(re.escape, STACK_TERMS)) + r")\b", re.IGNORECASE)
         found = []
+        # The answers file is Copier's, not the core's, and its _src_path
+        # holds this checkout's absolute path, which may contain any word
         for path in sorted(self.project.rglob("*")):
-            if path.is_file():
+            if path.is_file() and path.name != ".copier-answers.yml":
                 for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                     found += [f"{path.relative_to(self.project).as_posix()}:{number}: {term}" for term in pattern.findall(line)]
         self.assertEqual(found, [], "stack terms in the core")
