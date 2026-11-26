@@ -160,7 +160,7 @@ class CheckPluginVersionTest(unittest.TestCase):
         message = json.loads(run.stdout)["systemMessage"]
         self.assertIn("Restart to apply changes", message)
         self.assertIn("/reload-plugins", message)
-        self.assertIn("sessão nova", message)
+        self.assertIn("new session", message)
 
     def test_is_silent_when_the_installed_version_is_the_published_one(self) -> None:
         root = make_cache_entry(self.directory, self.published[:12], self.repository.as_posix())

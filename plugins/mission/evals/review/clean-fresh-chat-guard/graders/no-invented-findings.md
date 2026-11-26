@@ -13,6 +13,7 @@ Known real defects (a reviewer may report any of them, in any wording or languag
 6. The session summary says the guard is "em uso nos quatro projetos" while its own "Pendência nos projetos" row says three projects still have to update to receive it.
 7. The `*)` branch of `require-fresh-chat.sh` (grep fails to read the transcript) has no test.
 8. `ship-pr` was not updated and now contradicts the hook: its step 7 and its "Limite" say an interrupted wait resumes from "the next message or chat", but typing `/mission:ship-pr` again in a chat that already has conversation is blocked; only the plugin README says to `/clear` first.
+9. Several new tests were never seen failing on their own assertion: the RED (`FileNotFoundError` for `hooks.json`) stops every test before its assertion, and the three recorded mutations cover only the unanchored matcher, the quoted assistant text and the JSON escapes; `test_blocks_ship_pr_in_a_chat_with_prior_conversation`, `test_allows_ship_pr_as_the_first_message_after_clear`, the three `test_fails_open_*` tests and `test_matches_ship_pr` have no mutation.
 
 PASS if every finding the response presents as a problem to fix matches one of the known defects, or the response reports no finding. Remarks the response explicitly marks as optional or as needing no change do not count as findings.
 FAIL if at least one finding presented as a problem matches none of the known defects. A new finding is not necessarily false: if it holds when checked, it is added to this list (see "Decision rule" in `evals/README.md`).
