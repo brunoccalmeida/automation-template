@@ -23,3 +23,31 @@ _skip_if_exists:
   - docs/PROJECT_SESSION_SUMMARY.md
   - docs/KNOWN_ISSUES.md
   - docs/adr/README.md
+
+# The contracts of core.md (ADR 0003), rendered into the contracts table of
+# the generated CLAUDE.md. A pack answers them with its own commands; left
+# empty, the table reads "Not set" and the mission plugin stops and asks.
+cmd_check:
+  type: str
+  help: "`check` contract: the command for the static checks (lint, types, formatting); empty if none yet"
+  default: ""
+
+cmd_test:
+  type: str
+  help: "`test` contract: the command that runs the test suite; empty if none yet"
+  default: ""
+
+cmd_smoke:
+  type: str
+  help: "`smoke` contract: the fastest end-to-end proof that the project runs; empty if none yet"
+  default: ""
+
+main_branch:
+  type: str
+  help: "`main-branch` contract: the branch pull requests merge into"
+  default: ""
+
+gate:
+  type: str
+  help: "`gate` contract: the single CI check the branch ruleset requires; empty if none yet"
+  default: ""

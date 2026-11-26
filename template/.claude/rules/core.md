@@ -8,7 +8,7 @@ below goes there too, naming the rule and the reason.
 
 Commands differ between projects, so these rules and the `mission` plugin refer to each
 one by a fixed role name. The project's `CLAUDE.md` has a contracts table mapping each
-role to its real value (for example, `check` → `npm run lint && npm run typecheck`).
+role to its real value: a command, a branch, a check or a path.
 
 | Role | Meaning |
 | --- | --- |

@@ -10,7 +10,7 @@ Values that the core and the [`mission`](plugins/mission/README.md) plugin use i
 | --- | --- |
 | `check` | `npm ci --prefix .github/tools/claude-cli` once, then `python3 .github/scripts/validate_plugins.py` (on Windows, pass the script the absolute path of `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
 | `test` | `pip install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt` once, in a virtual environment, then `python3 -m unittest discover -s tests` (tests of the plugin's hooks and of the template; they need `sh`, `git` and `copier` on the `PATH` and fail without them; on Windows, `python` or `py -3`, with Git Bash on the `PATH`) |
-| `smoke` | None yet: the generated project has no stack to run until the `ts-playwright` pack (Mission 5, #7) |
+| `smoke` | None: the template has no stack of its own to run |
 | `main-branch` | `main` |
 | `gate` | `ci-passed` |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |
@@ -32,7 +32,7 @@ This repository is a [Copier](https://copier.readthedocs.io/) template for test 
 
 ## Ruleset as code
 
-[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) describes the active ruleset (id 27584439), but editing the file does not change GitHub. Changed the file: apply it with `gh api -X PUT repos/{owner}/{repo}/rulesets/27584439 --input .github/rulesets/protect-main.json` and check with `gh api repos/{owner}/{repo}/rulesets/27584439`; changed it in the web interface: bring the change into the file. The automatic drift check is left to Mission 4 (#6).
+[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) describes the active ruleset (id 27584439), but editing the file does not change GitHub. Changed the file: apply it with `gh api -X PUT repos/{owner}/{repo}/rulesets/27584439 --input .github/rulesets/protect-main.json` and check with `gh api repos/{owner}/{repo}/rulesets/27584439`; changed it in the web interface: bring the change into the file.
 
 ## Changes to the plugin itself
 

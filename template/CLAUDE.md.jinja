@@ -4,15 +4,16 @@ Rules for this repository only. The ones that apply to every project are in [`.c
 
 ## Contracts
 
+{% macro contract(value) %}{% if value.strip() %}`{{ value.strip() }}`{% else %}Not set{% endif %}{% endmacro -%}
 Values that the core and the `mission` plugin use in this repository. Replace each "Not set" with the real command or value before the first mission.
 
 | Contract | Value |
 | --- | --- |
-| `check` | Not set |
-| `test` | Not set |
-| `smoke` | Not set |
-| `main-branch` | Not set |
-| `gate` | Not set |
+| `check` | {{ contract(cmd_check) }} |
+| `test` | {{ contract(cmd_test) }} |
+| `smoke` | {{ contract(cmd_smoke) }} |
+| `main-branch` | {{ contract(main_branch) }} |
+| `gate` | {{ contract(gate) }} |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |
 
 ## Exceptions to the core

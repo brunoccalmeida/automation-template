@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "brunoccalmeida-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "brunoccalmeida/automation-template"
+      },
+      "autoUpdate": false
+    }
+  },
+  "enabledPlugins": {
+    "mission@brunoccalmeida-plugins": true
+  }
+}
