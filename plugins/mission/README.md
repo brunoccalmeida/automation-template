@@ -94,17 +94,17 @@ So the `reviewer` agent keeps the checks no native reviewer documents (scope aga
 
 ### A reviewer of our own on the pull request
 
-A second agent that reviews the open pull request would add nothing to the `reviewer`, so the cycle has none ([#56](https://github.com/brunoccalmeida/automation-template/issues/56); evidence from the 180 pull requests merged in the four projects using the plugin, November 2026). It would read the same diff with the same model, so it would share the `reviewer`'s blind spots. And what only the pull request stage sees is already covered, or has never held a defect:
+A second agent that reviews the open pull request would add nothing to the `reviewer`, so the cycle has none ([#56](https://github.com/brunoccalmeida/automation-template/issues/56), November 2026). It would read the same diff with the same model, so it would share the `reviewer`'s blind spots, and what only the pull request stage sees is already covered by a step of the cycle:
 
 | Only on the pull request | Covered by | Evidence |
 | --- | --- | --- |
-| The body, which becomes the squash message when the repository uses `PR_BODY` ("default to the pull request's body", [Update a repository](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#update-a-repository)) | `ship-pr` step 5, for the closing references | Its only real defect was a missing closing keyword (kit#51 left #15 open). No `reviewer-miss` traces to anything else in a body |
-| The squash title (`PR_TITLE`: "default to the pull request's title") | Nothing | No defect seen |
+| The body, which becomes the squash message when the repository uses `PR_BODY` ("default to the pull request's body", [Update a repository](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#update-a-repository)) | `ship-pr` step 3 (review the body before the merge) and step 5 (closing references, checked against the issues' state) | Its one known defect was a missing closing keyword (kit#51 left #15 open), the case step 5 was written for |
+| The squash title (`PR_TITLE`: "default to the pull request's title") | `ship-pr` step 3 (review the title before the merge) | None known |
 | CI on the head SHA | The `gate`, read by SHA in `ship-pr` step 4 | |
-| Commits after the review (fixes of its findings) | `check` and `test` run again (`close-mission` step 5) | Both `reviewer-miss` issues ([#39](https://github.com/brunoccalmeida/automation-template/issues/39), [#51](https://github.com/brunoccalmeida/automation-template/issues/51)) came from the reviewed diff, not from a later fix |
-| A merge of the main branch to resolve `DIRTY` | `check` and `test` run again (`ship-pr` step 2) | 3 merges in 180 pull requests (kit#46, nextjs#54, UAT#154), two of them only in the session summary; none led to a `reviewer-miss` |
+| Commits after the review (fixes of its findings) | `check` and `test` run again (`close-mission` step 5) | In this repository, both `reviewer-miss` issues ([#39](https://github.com/brunoccalmeida/automation-template/issues/39), [#51](https://github.com/brunoccalmeida/automation-template/issues/51)) came from the reviewed diff, not from a later fix |
+| A merge of the main branch to resolve `DIRTY` | `check` and `test` run again (`ship-pr` step 2) | Rare: 3 in the 180 pull requests merged in the four projects using the plugin (kit#46, nextjs#54, UAT#154), two of them only in the session summary |
 
-Reopen the question if a `reviewer-miss` traces to something only the pull request held (a body, a commit pushed after the review, a conflict merge), or if conflict merges become common, for example if more than one pull request is open at a time.
+The evidence is thin, and the decision rests on the argument above, not on it: the `reviewer-miss` label exists only in this repository, since [#38](https://github.com/brunoccalmeida/automation-template/issues/38) (9 pull requests by #56), most of the 180 were merged before the `reviewer` existed, and the `reviewer` never reads the body, so a defect only in a body would hardly be labeled as its miss. Reopen the question if, in any project, a defect found after a merge comes from something only the pull request held (the body, a commit pushed after the review, a conflict merge), labeled or not, or if conflict merges become common, for example if more than one pull request is open at a time.
 
 ## Ship in a fresh chat
 
