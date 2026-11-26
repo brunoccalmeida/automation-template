@@ -15,3 +15,4 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0007](0007-test-the-template-by-generating-the-core.md) | Test the template by generating the core, with a hash-locked Copier | Accepted |
 | [0008](0008-core-rules-and-documents-in-the-generated-project.md) | Core rules and documents in the generated project: ownership, line endings and retries | Accepted |
 | [0009](0009-contracts-as-copier-answers-and-a-shared-harness.md) | Contracts as Copier answers, the marketplace in the core, and this repository on its own core | Accepted |
+| [0010](0010-claude-code-enforcement-in-the-core.md) | Claude Code enforcement in the core: deny rules and a SessionStart hook | Accepted |

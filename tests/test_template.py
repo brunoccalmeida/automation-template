@@ -76,6 +76,7 @@ ADOPTED = (
     ".claude/rules/core.md",
     ".claude/rules/agent-rules.md",
     ".claude/settings.json",
+    ".claude/hooks/session-start.sh",
     ".gitattributes",
     "docs/ai-workflow/AGENT_TOKEN_SPEND.md",
 )
