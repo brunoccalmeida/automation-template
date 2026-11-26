@@ -23,6 +23,85 @@ TEMPLATE_ROOT = Path(__file__).resolve().parent.parent
 COPIER = shutil.which("copier")
 TIMEOUT_SECONDS = 120
 PROJECT_NAME = "Demo Project"
+CORE_RULES = Path(".claude/rules/core.md")
+ALWAYS_LOADED_LINE_LIMIT = 200
+# Each document the core ships, by path in the generated project, with the
+# title it must open with
+DOCUMENTS = {
+    "docs/PROJECT_SESSION_SUMMARY.md": "Session summary",
+    "docs/KNOWN_ISSUES.md": "Known issues",
+    "docs/FLAKY_TESTS.md": "Flaky test policy",
+    "docs/adr/README.md": "Architecture Decision Records",
+    "docs/adr/template.md": "N. Title of the decision",
+    "docs/spikes/template.md": "Spike: the question it answers",
+    "docs/ai-workflow/README.md": "AI workflow",
+    "docs/ai-workflow/AGENT_TOKEN_SPEND.md": "Agent token spend",
+}
+# Files the generated project fills in and owns after the first copy
+PROJECT_OWNED = (
+    "README.md",
+    "CLAUDE.md",
+    "docs/PROJECT_SESSION_SUMMARY.md",
+    "docs/KNOWN_ISSUES.md",
+    "docs/adr/README.md",
+)
+PROJECT_TEXT = "# Written by the project\n"
+
+
+# Commits in throwaway repositories need an identity, and must not depend on
+# the machine's signing setup
+GIT = ("git", "-c", "user.name=test", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false")
+TEMPLATE_CHANGE = "\nA line added by a new template version.\n"
+
+
+def _run(*args: str, cwd: Path | None = None) -> None:
+    result = subprocess.run(list(args), cwd=cwd, capture_output=True, text=True, timeout=TIMEOUT_SECONDS)
+    if result.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed ({result.returncode}):\n{result.stderr}")
+
+
+def _copier_copy(destination: Path) -> None:
+    """Render this checkout into destination, with every answer given."""
+    _run(COPIER, "copy", "--vcs-ref=HEAD", "--defaults", "--data", f"project_name={PROJECT_NAME}", str(TEMPLATE_ROOT), str(destination))
+
+
+def _commit(repository: Path, message: str) -> None:
+    _run(*GIT, "add", "-A", cwd=repository)
+    _run(*GIT, "commit", "-q", "-m", message, cwd=repository)
+
+
+def _template_source(path: str) -> Path:
+    """The file in template/ that renders path in the project."""
+    source = Path("template") / path
+    rendered = source.with_name(source.name + ".jinja")
+    return rendered if (TEMPLATE_ROOT / rendered).is_file() else source
+
+
+def _scoped_paths(rule: Path) -> bool:
+    """Whether a rules file opens with a frontmatter that declares paths:."""
+    lines = rule.read_text(encoding="utf-8").splitlines()
+    if not lines or lines[0] != "---":
+        return False
+    try:
+        end = lines.index("---", 1)
+    except ValueError:
+        return False
+    return any(line.startswith("paths:") for line in lines[1:end])
+
+
+def _table_rows(markdown: str) -> list[list[str]]:
+    """The body rows of every Markdown table, as lists of stripped cells."""
+    rows = []
+    for line in markdown.splitlines():
+        if not line.startswith("|") or set(line.replace("|", "").strip()) <= set("-: "):
+            continue
+        rows.append([cell.strip() for cell in line.strip("|").split("|")])
+    return rows
+
+
+def _first_column(rows: list[list[str]]) -> set[str]:
+    """The backticked names in the first column (the contract roles)."""
+    return {row[0].strip("`") for row in rows if row[0].startswith("`") and row[0].endswith("`")}
 
 
 def setUpModule() -> None:
@@ -45,24 +124,11 @@ class GeneratedProjectTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls._tmp = tempfile.TemporaryDirectory()
         cls.project = Path(cls._tmp.name) / "project"
-        result = subprocess.run(
-            [
-                COPIER,
-                "copy",
-                "--vcs-ref=HEAD",
-                "--defaults",
-                "--data",
-                f"project_name={PROJECT_NAME}",
-                str(TEMPLATE_ROOT),
-                str(cls.project),
-            ],
-            capture_output=True,
-            text=True,
-            timeout=TIMEOUT_SECONDS,
-        )
-        if result.returncode != 0:
+        try:
+            _copier_copy(cls.project)
+        except RuntimeError:
             cls._tmp.cleanup()
-            raise RuntimeError(f"copier copy failed ({result.returncode}):\n{result.stderr}")
+            raise
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -82,10 +148,100 @@ class GeneratedProjectTest(unittest.TestCase):
         self.assertIn(f"project_name: {PROJECT_NAME}", lines)
         self.assertTrue(any(line.startswith("_src_path: ") for line in lines), f"no _src_path in:\n{lines}")
 
+    def test_core_rules_are_the_ones_this_repository_follows(self) -> None:
+        # core.md is identical in every project (its own header says so); the
+        # template ships the same file this repository loads, so the two
+        # copies cannot drift apart
+        generated = self.project / CORE_RULES
+        self.assertTrue(generated.is_file(), f"{CORE_RULES} not rendered")
+        self.assertEqual(
+            generated.read_text(encoding="utf-8"),
+            (TEMPLATE_ROOT / CORE_RULES).read_text(encoding="utf-8"),
+            f"the generated {CORE_RULES} differs from this repository's",
+        )
+
+    def test_always_loaded_rules_stay_under_the_line_limit(self) -> None:
+        # Claude Code loads CLAUDE.md and every .claude/rules file without a
+        # paths: frontmatter at the start of each session; the core keeps
+        # them under 200 lines (core.md, "Context and tokens")
+        always_loaded = [self.project / "CLAUDE.md"] + [
+            rule for rule in sorted((self.project / ".claude" / "rules").glob("*.md")) if not _scoped_paths(rule)
+        ]
+        lines = {path.relative_to(self.project).as_posix(): len(path.read_text(encoding="utf-8").splitlines()) for path in always_loaded}
+        self.assertLess(sum(lines.values()), ALWAYS_LOADED_LINE_LIMIT, f"always-loaded lines: {lines}")
+
+    def test_only_core_rules_are_always_loaded(self) -> None:
+        # Any other rule is for one part of the code, so it declares the
+        # paths it applies to and loads only when Claude reads them
+        rules = sorted((self.project / ".claude" / "rules").glob("*.md"))
+        scoped = [rule.name for rule in rules if rule.name != CORE_RULES.name]
+        self.assertTrue(scoped, "no path-scoped rule rendered")
+        for name in scoped:
+            self.assertTrue(_scoped_paths(self.project / ".claude" / "rules" / name), f"{name} has no paths: frontmatter, so it is always loaded")
+
+    def test_claude_md_maps_every_contract_role(self) -> None:
+        # core.md refers to commands by role and expects the project's
+        # CLAUDE.md to map each one (core.md, "Contracts")
+        roles = _first_column(_table_rows((TEMPLATE_ROOT / CORE_RULES).read_text(encoding="utf-8")))
+        claude_md = self.project / "CLAUDE.md"
+        self.assertTrue(claude_md.is_file(), "CLAUDE.md not rendered")
+        mapped = _first_column(_table_rows(claude_md.read_text(encoding="utf-8")))
+        self.assertTrue(roles, "no contract roles found in core.md")
+        self.assertEqual(sorted(mapped & roles), sorted(roles), "contract roles missing from CLAUDE.md")
+
+    def test_document_templates_are_rendered(self) -> None:
+        for path, title in DOCUMENTS.items():
+            with self.subTest(path=path):
+                document = self.project / path
+                self.assertTrue(document.is_file(), f"{path} not rendered")
+                self.assertEqual(document.read_text(encoding="utf-8").splitlines()[0], f"# {title}")
+
+    def test_git_stores_and_checks_out_text_with_lf(self) -> None:
+        gitattributes = self.project / ".gitattributes"
+        self.assertTrue(gitattributes.is_file(), ".gitattributes not rendered")
+        self.assertIn("* text=auto eol=lf", gitattributes.read_text(encoding="utf-8").splitlines())
+
+    def test_copier_update_keeps_the_files_the_project_owns(self) -> None:
+        # The project fills these in; _skip_if_exists renders them once and
+        # skips them when they already exist (Copier docs, "Configuring a
+        # template"). This runs the real copier update between two tagged
+        # template versions that both change those files, from a copy of this
+        # checkout, so it covers uncommitted changes too
+        with tempfile.TemporaryDirectory() as tmp:
+            template, project = Path(tmp) / "template", Path(tmp) / "project"
+            template.mkdir()
+            shutil.copy2(TEMPLATE_ROOT / "copier.yml", template)
+            shutil.copytree(TEMPLATE_ROOT / "template", template / "template")
+            _run(*GIT, "init", "-q", cwd=template)
+            _commit(template, "v1")
+            _run(*GIT, "tag", "v1.0.0", cwd=template)
+            _run(COPIER, "copy", "--defaults", "--data", f"project_name={PROJECT_NAME}", str(template), str(project))
+            _run(*GIT, "init", "-q", cwd=project)
+            _commit(project, "generated")
+            for path in PROJECT_OWNED:
+                (project / path).write_text(PROJECT_TEXT, encoding="utf-8")
+            _commit(project, "filled in by the project")
+            template_owned = "docs/FLAKY_TESTS.md"
+            for path in (*PROJECT_OWNED, template_owned):
+                with (template / _template_source(path)).open("a", encoding="utf-8") as source:
+                    source.write(TEMPLATE_CHANGE)
+            _commit(template, "v1.1")
+            _run(*GIT, "tag", "v1.1.0", cwd=template)
+
+            _run(COPIER, "update", "--defaults", cwd=project)
+
+            self.assertTrue(
+                (project / template_owned).read_text(encoding="utf-8").endswith(TEMPLATE_CHANGE),
+                f"copier update did not bring the new version of {template_owned}",
+            )
+            for path in PROJECT_OWNED:
+                with self.subTest(path=path):
+                    self.assertEqual((project / path).read_text(encoding="utf-8"), PROJECT_TEXT, f"copier update changed {path}")
+
     def test_template_files_stay_out_of_the_project(self) -> None:
         # _subdirectory keeps the template repository's own files (plugin,
         # docs, CI) out of every generated project
-        for name in ("copier.yml", "plugins", "docs", ".github"):
+        for name in ("copier.yml", "plugins", "docs/INVENTORY.md", "docs/adr/0001-use-copier.md", ".github"):
             self.assertFalse((self.project / name).exists(), f"{name} leaked into the generated project")
 
 

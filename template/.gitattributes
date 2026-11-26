@@ -1,0 +1,5 @@
+# Git stores text files with LF and writes LF to the working tree on every OS,
+# whatever core.autocrlf says, so formatters that require LF pass after a
+# fresh checkout on Windows too (git-scm.com/docs/gitattributes, "eol").
+# Binary files are left as they are (text=auto).
+* text=auto eol=lf

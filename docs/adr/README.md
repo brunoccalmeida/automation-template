@@ -13,3 +13,4 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0005](0005-keep-seen-failing-as-the-core-testing-principle.md) | Keep "every test was seen failing" as the core's only testing principle | Accepted |
 | [0006](0006-resume-copier-for-the-core-and-the-ts-pack.md) | Resume Copier for the core and the `ts-playwright` pack | Accepted |
 | [0007](0007-test-the-template-by-generating-the-core.md) | Test the template by generating the core, with a hash-locked Copier | Accepted |
+| [0008](0008-core-rules-and-documents-in-the-generated-project.md) | Core rules and documents in the generated project: ownership, line endings and retries | Accepted |
