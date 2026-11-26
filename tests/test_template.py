@@ -48,26 +48,33 @@ PROJECT_OWNED = (
 PROJECT_TEXT = "# Written by the project\n"
 
 
-def _copier_copy(destination: Path, *extra: str) -> None:
-    """Render this checkout into destination, with every answer given."""
-    result = subprocess.run(
-        [
-            COPIER,
-            "copy",
-            "--vcs-ref=HEAD",
-            "--defaults",
-            *extra,
-            "--data",
-            f"project_name={PROJECT_NAME}",
-            str(TEMPLATE_ROOT),
-            str(destination),
-        ],
-        capture_output=True,
-        text=True,
-        timeout=TIMEOUT_SECONDS,
-    )
+# Commits in throwaway repositories need an identity, and must not depend on
+# the machine's signing setup
+GIT = ("git", "-c", "user.name=test", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false")
+TEMPLATE_CHANGE = "\nA line added by a new template version.\n"
+
+
+def _run(*args: str, cwd: Path | None = None) -> None:
+    result = subprocess.run(list(args), cwd=cwd, capture_output=True, text=True, timeout=TIMEOUT_SECONDS)
     if result.returncode != 0:
-        raise RuntimeError(f"copier copy failed ({result.returncode}):\n{result.stderr}")
+        raise RuntimeError(f"{' '.join(args)} failed ({result.returncode}):\n{result.stderr}")
+
+
+def _copier_copy(destination: Path) -> None:
+    """Render this checkout into destination, with every answer given."""
+    _run(COPIER, "copy", "--vcs-ref=HEAD", "--defaults", "--data", f"project_name={PROJECT_NAME}", str(TEMPLATE_ROOT), str(destination))
+
+
+def _commit(repository: Path, message: str) -> None:
+    _run(*GIT, "add", "-A", cwd=repository)
+    _run(*GIT, "commit", "-q", "-m", message, cwd=repository)
+
+
+def _template_source(path: str) -> Path:
+    """The file in template/ that renders path in the project."""
+    source = Path("template") / path
+    rendered = source.with_name(source.name + ".jinja")
+    return rendered if (TEMPLATE_ROOT / rendered).is_file() else source
 
 
 def _scoped_paths(rule: Path) -> bool:
@@ -194,21 +201,42 @@ class GeneratedProjectTest(unittest.TestCase):
         self.assertTrue(gitattributes.is_file(), ".gitattributes not rendered")
         self.assertIn("* text=auto eol=lf", gitattributes.read_text(encoding="utf-8").splitlines())
 
-    def test_copier_never_overwrites_files_the_project_owns(self) -> None:
+    def test_copier_update_keeps_the_files_the_project_owns(self) -> None:
         # The project fills these in; _skip_if_exists renders them once and
         # skips them when they already exist (Copier docs, "Configuring a
-        # template"), so copier update keeps the project's text
+        # template"). This runs the real copier update between two tagged
+        # template versions that both change those files, from a copy of this
+        # checkout, so it covers uncommitted changes too
         with tempfile.TemporaryDirectory() as tmp:
-            project = Path(tmp) / "project"
-            shutil.copytree(self.project, project)
+            template, project = Path(tmp) / "template", Path(tmp) / "project"
+            template.mkdir()
+            shutil.copy2(TEMPLATE_ROOT / "copier.yml", template)
+            shutil.copytree(TEMPLATE_ROOT / "template", template / "template")
+            _run(*GIT, "init", "-q", cwd=template)
+            _commit(template, "v1")
+            _run(*GIT, "tag", "v1.0.0", cwd=template)
+            _run(COPIER, "copy", "--defaults", "--data", f"project_name={PROJECT_NAME}", str(template), str(project))
+            _run(*GIT, "init", "-q", cwd=project)
+            _commit(project, "generated")
+            for path in PROJECT_OWNED:
+                (project / path).write_text(PROJECT_TEXT, encoding="utf-8")
+            _commit(project, "filled in by the project")
+            template_owned = "docs/FLAKY_TESTS.md"
+            for path in (*PROJECT_OWNED, template_owned):
+                with (template / _template_source(path)).open("a", encoding="utf-8") as source:
+                    source.write(TEMPLATE_CHANGE)
+            _commit(template, "v1.1")
+            _run(*GIT, "tag", "v1.1.0", cwd=template)
+
+            _run(COPIER, "update", "--defaults", cwd=project)
+
+            self.assertTrue(
+                (project / template_owned).read_text(encoding="utf-8").endswith(TEMPLATE_CHANGE),
+                f"copier update did not bring the new version of {template_owned}",
+            )
             for path in PROJECT_OWNED:
                 with self.subTest(path=path):
-                    self.assertTrue((project / path).is_file(), f"{path} not rendered")
-                    (project / path).write_text(PROJECT_TEXT, encoding="utf-8")
-            _copier_copy(project, "--overwrite")
-            for path in PROJECT_OWNED:
-                with self.subTest(path=path):
-                    self.assertEqual((project / path).read_text(encoding="utf-8"), PROJECT_TEXT, f"Copier overwrote {path}")
+                    self.assertEqual((project / path).read_text(encoding="utf-8"), PROJECT_TEXT, f"copier update changed {path}")
 
     def test_template_files_stay_out_of_the_project(self) -> None:
         # _subdirectory keeps the template repository's own files (plugin,

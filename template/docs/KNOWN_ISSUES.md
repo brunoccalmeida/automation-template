@@ -2,7 +2,7 @@
 
 Defects in the application under test that this test suite found and that are still open.
 
-**How they are tracked:** each entry has a test that asserts the **correct** behaviour, marked with the runner's expected-failure mechanism and linked to its entry here. While the defect exists, the test fails as expected and the run stays green. Once the defect is fixed, the test starts passing, the run fails, and that signals that the marker must be removed. The suite keeps documenting the defect and detects its fix, instead of hiding it behind a skipped test.
+**How they are tracked:** each entry has a test that asserts the **correct** behaviour, marked with the runner's expected-failure mechanism in its strict form, where an unexpected pass fails the run, and linked to its entry here. A non-strict marker would let the fix go unnoticed. While the defect exists, the test fails as expected and the run stays green. Once the defect is fixed, the test starts passing, the run fails, and that signals that the marker must be removed. The suite keeps documenting the defect and detects its fix, instead of hiding it behind a skipped test.
 
 **Before marking a test:** confirm that it fails for the reason of the defect, not for another one. An expected failure accepts any failure, so a test broken for a different reason would pass unnoticed.
 

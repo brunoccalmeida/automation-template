@@ -54,6 +54,12 @@ What it shows: the §8 line-ending question has three of four projects on `eol=l
 | Principles (Zen) | Identical | Identical | Tie | C | 2a |
 | Path-scoped rules (`.claude/rules/` = `.github/instructions/`) | Yes: Python, Selenium, workflows, Poetry | **Missing** | **UAT** | Mechanism C; content P, except `workflows.md` (C, minus the `pip-audit` line) | 2a |
 
+**Mission 2a (#3):** the template ships [`core.md`](../.claude/rules/core.md) as #45 merged it, plus a path-scoped `agent-rules.md`. The C rows of this table that #45 left out without a record, and where each one goes:
+
+- **Dependencies** (core principles): Mission 4 (#6), with the core's Dependabot; the commands go to each pack. The generated core has no dependency yet (YAGNI).
+- **`workflows.md`** (path-scoped): the mission that brings the core's first workflow, Mission 3 (#5) or 4 (#6); a rule for files that do not exist would never load.
+- **Principles (Zen)**, the UAT's extra rule in "Wait for the final state" (a final state equal to the initial one: change the initial one first) and the why of one open pull request at a time: left out. The core keeps only what cannot be inferred and stays under its line limit; a mission that hits the gap reopens it with an issue (*judgment call*).
+
 ## 2. Skills and agent
 
 | Piece | UAT | kit | Better | Cat. | Phase |
