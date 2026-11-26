@@ -8,9 +8,9 @@ run against the documented semantics (Permissions, "Wildcard patterns": a
 ``*`` matches any text, including spaces; a rule with no ``*`` matches one
 exact command; "How path patterns match": a bare filename matches at any
 depth, and a ``!`` deny pattern carves its paths out of the rules before it).
-The commands are also tried against the real Claude Code before the merge
-(the mission record lists them); these tests keep a later edit from dropping
-or weakening a rule.
+Some commands were also tried in the real Claude Code (the mission record
+in #5's pull request lists which); these tests keep a later edit from
+dropping or weakening a rule.
 
 SessionStart hook: each test runs the command exactly as the settings declare
 it, through ``sh -c`` with ``CLAUDE_PROJECT_DIR`` exported, the way Claude Code
