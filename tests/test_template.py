@@ -79,6 +79,8 @@ ADOPTED = (
     ".claude/hooks/session-start.sh",
     ".gitattributes",
     "docs/ai-workflow/AGENT_TOKEN_SPEND.md",
+    ".github/workflows/core-checks.yml",
+    ".github/scripts/check-text-encoding.sh",
 )
 
 
@@ -347,8 +349,10 @@ class GeneratedProjectTest(unittest.TestCase):
 
     def test_template_files_stay_out_of_the_project(self) -> None:
         # _subdirectory keeps the template repository's own files (plugin,
-        # docs, CI) out of every generated project
-        for name in ("copier.yml", "plugins", "docs/INVENTORY.md", "docs/adr/0001-use-copier.md", ".github"):
+        # docs, CI) out of every generated project. The project gets the
+        # core's .github files (core-checks.yml and its script), not these
+        template_own = (".github/workflows/ci.yml", ".github/scripts/validate_plugins.py", ".github/tools", ".github/rulesets")
+        for name in ("copier.yml", "plugins", "docs/INVENTORY.md", "docs/adr/0001-use-copier.md", *template_own):
             self.assertFalse((self.project / name).exists(), f"{name} leaked into the generated project")
 
 
