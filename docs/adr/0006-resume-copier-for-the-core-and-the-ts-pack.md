@@ -13,7 +13,7 @@ The template was paused on 2026-11-06 for two reasons ([session summary, Pause](
 
 ADR 0004 resumed only the plugin on 2026-11-17 and kept Copier paused for the same reasons. A survey of the local projects on 2026-11-25 ([INVENTORY.md, fourth and fifth sources](../INVENTORY.md#fourth-and-fifth-sources-2026-11-25)) found:
 
-- **The harness is in four repositories, and a fifth started today.** The kit, the UAT, the nextjs project and doc-intake-pipeline (a Python pipeline with an LLM, not a test automation project) all use the `mission` plugin, a `ci-passed` gate, zizmor, Dependabot with `cooldown`, `persist-credentials: false` and a `deny` list in `.claude/settings.json`. supabase-app-hardening was set up by hand on 2026-11-25.
+- **The harness is in four repositories, and a fifth started today.** The kit, the UAT, the nextjs project and doc-intake-pipeline (a Python pipeline with an LLM, not a test automation project) all use the `mission` plugin, a `ci-passed` gate, zizmor, Dependabot with `cooldown`, `persist-credentials: false` and a `deny` list in `.claude/settings.json`. supabase-app-hardening, set up by hand on 2026-11-25, already has the plugin and the `deny` list, and plans the rest.
 - **The divergences of §8 have an answer.** All four store LF in the repository, and three use `* text=auto eol=lf` (the UAT keeps `* text=auto`). The kit and the UAT now share the same flaky policy: a retry only diagnoses, and a flake fails the run.
 - **The hand-made copies keep drifting.** The rules live in `.github/copilot-instructions.md` in two projects and `AGENTS.md` in the other two; none has adopted [`core.md`](../../.claude/rules/core.md) (#45). supabase-app-hardening wrote its own pt-BR version of the rules instead of copying `core.md`, and its plan copies `ci.yml`, `dependabot.yml` and `KNOWN_ISSUES` from the nextjs project by hand.
 
@@ -33,7 +33,7 @@ ADR 0004 resumed only the plugin on 2026-11-17 and kept Copier paused for the sa
 
 ## Consequences
 
-- #2 loses the `blocked` label and becomes the next mission; #8 gets `blocked`.
+- #2 loses the `blocked` label and becomes the next mission; #8 gets `blocked`. The release (#9) and the adoption in the kit (#10) follow #7; the adoption in the UAT (#11) needs the Python pack, so it gets `blocked` with #8.
 - [INVENTORY.md](../INVENTORY.md) counts four sources for the core; the per-piece tables are reviewed against them in the mission that extracts each piece, not all at once.
 - The decisions left in INVENTORY §8 are still made in Mission 2a (#3), with sources, but now with four projects of evidence.
 - The pending propagation work in the other projects (plugin update, `core.md` copy, kit#52) stays as it is: a copied `core.md` is the same file Copier will render.
