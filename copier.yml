@@ -12,3 +12,14 @@ project_name:
   type: str
   help: Project name, used as the README title
   validator: "{% if not project_name.strip() %}The project name cannot be empty{% endif %}"
+
+# Rendered on the first copy, then owned by the project: Copier skips them
+# when they already exist, so copier update never overwrites what the project
+# wrote in them. The rest of template/ belongs to the template and is updated
+# by copier update; the project adds its own files instead of editing those.
+_skip_if_exists:
+  - README.md
+  - CLAUDE.md
+  - docs/PROJECT_SESSION_SUMMARY.md
+  - docs/KNOWN_ISSUES.md
+  - docs/adr/README.md
