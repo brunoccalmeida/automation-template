@@ -1,6 +1,6 @@
 # 4. Partial resumption: distribute the shared harness as a Claude Code plugin
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0006](0006-resume-copier-for-the-core-and-the-ts-pack.md) (Copier resumes for the core and the `ts-playwright` pack)
 - **Date:** 2026-11-17
 - **Supersedes in part:** [ADR 0001](0001-use-copier.md) (the plugin was deferred) and [ADR 0003](0003-stack-agnostic-core-defines-contracts.md) (contracts bound through Copier variables), for the pieces the plugin carries
 

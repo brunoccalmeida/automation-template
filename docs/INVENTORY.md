@@ -14,7 +14,27 @@ Mission 0 survey (2026-11-06): what exists in [uat-automation-framework](https:/
 
 Stance: with only two projects, **when in doubt, leave it out** (rule of three). It moves up into the template when a third project repeats the pattern.
 
-**Third source (Mission A, 2026-11-17):** [playwright-nextjs-e2e-ci](https://github.com/brunoccalmeida/playwright-nextjs-e2e-ci) (**nextjs**, Playwright/TS over a frozen Next.js app) repeats the harness and fired the [partial resumption](adr/0004-partial-resumption-with-a-plugin.md). For now it counts only as a source for the plugin pieces ([§2](#mission-a-the-four-versions-of-the-plugin-pieces)); the other tables keep the two original sources until Copier resumes.
+**Third source (Mission A, 2026-11-17):** [playwright-nextjs-e2e-ci](https://github.com/brunoccalmeida/playwright-nextjs-e2e-ci) (**nextjs**, Playwright/TS over a frozen Next.js app) repeats the harness and fired the [partial resumption](adr/0004-partial-resumption-with-a-plugin.md). For now it counts only as a source for the plugin pieces ([§2](#mission-a-the-four-versions-of-the-plugin-pieces)); the per-piece tables keep the two original sources; since Copier resumed ([ADR 0006](adr/0006-resume-copier-for-the-core-and-the-ts-pack.md)), each extraction mission reviews its pieces against every source ([fourth and fifth sources](#fourth-and-fifth-sources-2026-11-25)).
+
+## Fourth and fifth sources (2026-11-25)
+
+Survey behind [ADR 0006](adr/0006-resume-copier-for-the-core-and-the-ts-pack.md), read from the local clones on 2026-11-25. It adds [doc-intake-pipeline](https://github.com/brunoccalmeida/doc-intake-pipeline) (**doc-intake**: Python/uv, a document extraction pipeline with an LLM; not a test automation project) and **supabase-app-hardening** (**supabase**: set up on 2026-11-25, plan and rules only, no Git yet). The per-piece tables below still compare the UAT and the kit; each extraction mission reviews its pieces against all sources.
+
+| Piece | kit | UAT | nextjs | doc-intake | supabase |
+| --- | --- | --- | --- | --- | --- |
+| `mission` plugin in `.claude/settings.json` | Yes | Yes | Yes | Yes | Yes |
+| Rules file imported by `CLAUDE.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `.github/copilot-instructions.md` | `AGENTS.md` | `AGENTS.md`, in pt-BR, its own text |
+| [`core.md`](../.claude/rules/core.md) adopted (#45) | No | No | No | No | No |
+| `ci-passed` gate | Yes | Yes | Yes | Yes | Planned, copied from nextjs |
+| zizmor in CI | Yes | Yes | Yes | Yes | Planned |
+| Dependabot `cooldown` | Yes | Yes | Yes | Yes | Planned, copied from nextjs |
+| `persist-credentials: false` | Yes | Yes | Yes | Yes | — |
+| `deny` list in `.claude/settings.json` | Yes | Yes | Yes | Yes | Yes |
+| `.gitattributes` | `* text=auto eol=lf` | `* text=auto` (LF in the repository, platform endings on disk) | `* text=auto eol=lf` | `* text=auto eol=lf` | — |
+| Flaky policy | `docs/FLAKY_TESTS.md`: retries only diagnose, a flake fails the run | `docs/FLAKY_TESTS.md`: no retries, a re-run on the same SHA confirms | None | None | — |
+| Known issue marking | `test.fail()` + `knownIssue()` + `KNOWN_ISSUES.md` | Asserts the defect (§6; Sauce Demo's defects are intentional) | `test.fail()` + `knownIssue()` + `KNOWN_ISSUES.md` (same as the kit) | — | `test.fail()` + `knownIssue()`, copied from nextjs |
+
+What it shows: the §8 line-ending question has three of four projects on `eol=lf`; the §8 retry question is a difference of mechanism, since the kit and the UAT now state the same policy; and the copies still drift, because the core lives in two different files and no project carries `core.md`.
 
 ## 1. Always-loaded rules (`.github/copilot-instructions.md`, imported by `CLAUDE.md`)
 

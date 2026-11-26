@@ -4,7 +4,7 @@ A [Copier](https://copier.readthedocs.io/) template for test automation projects
 
 It is extracted from two existing projects, [uat-automation-framework](https://github.com/brunoccalmeida/uat-automation-framework) (Python, Behave, Selenium) and [playwright-qa-starter-kit](https://github.com/brunoccalmeida/playwright-qa-starter-kit) (Playwright, TypeScript), which had grown the same harness by copy and paste.
 
-> 🚧 Work in progress: the template is being built mission by mission. Today the repository ships the harness's Claude Code plugin; the Copier template is paused ([ADR 0004](docs/adr/0004-partial-resumption-with-a-plugin.md)).
+> 🚧 Work in progress: the template is being built mission by mission. Today the repository ships the harness's Claude Code plugin; the Copier template has resumed for the shared core and the `ts-playwright` pack, starting with its walking skeleton ([ADR 0006](docs/adr/0006-resume-copier-for-the-core-and-the-ts-pack.md)).
 
 ## Claude Code plugin
 
