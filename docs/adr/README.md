@@ -10,3 +10,4 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0002](0002-core-plus-packs-split-by-tool.md) | One repository: a shared core plus packs split by tool | Accepted |
 | [0003](0003-stack-agnostic-core-defines-contracts.md) | The core is stack-agnostic and defines contracts that packs implement | Accepted; partly superseded by 0004 |
 | [0004](0004-partial-resumption-with-a-plugin.md) | Partial resumption: distribute the shared harness as a Claude Code plugin | Accepted |
+| [0005](0005-keep-seen-failing-as-the-core-testing-principle.md) | Keep "every test was seen failing" as the core's only testing principle | Accepted |
