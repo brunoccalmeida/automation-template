@@ -4,13 +4,13 @@ Rules for this repository only. The ones that apply to every project are in [`.c
 
 ## Contracts
 
-Values that the core and the [`mission`](plugins/mission/README.md) plugin use in this repository. The artifact published today is the plugin itself, so `check` is its validation and `test` is the tests of its hooks, until Mission 1 (#2) brings the template's tests.
+Values that the core and the [`mission`](plugins/mission/README.md) plugin use in this repository. `check` is the validation of the plugin; `test` covers the plugin's hooks and the Copier template, which is tested by generating a project from it.
 
 | Contract | Value |
 | --- | --- |
 | `check` | `npm ci --prefix .github/tools/claude-cli` once, then `python3 .github/scripts/validate_plugins.py` (on Windows, pass the script the absolute path of `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
-| `test` | `python3 -m unittest discover -s tests` (tests of the plugin's hooks; they need `sh` and `git` on the `PATH` and fail without them; on Windows, `python` or `py -3`, with Git Bash on the `PATH`) |
-| `smoke` | None: there is no template to generate a project from yet (Mission 1, #2) |
+| `test` | `pip install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt` once, in a virtual environment, then `python3 -m unittest discover -s tests` (tests of the plugin's hooks and of the template; they need `sh`, `git` and `copier` on the `PATH` and fail without them; on Windows, `python` or `py -3`, with Git Bash on the `PATH`) |
+| `smoke` | None yet: the generated project has no stack to run until the `ts-playwright` pack (Mission 5, #7) |
 | `main-branch` | `main` |
 | `gate` | `ci-passed` |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |

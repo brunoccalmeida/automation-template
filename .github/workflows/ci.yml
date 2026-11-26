@@ -51,15 +51,16 @@ jobs:
           .github/tools/claude-cli/node_modules/.bin/claude --version
           python3 .github/scripts/validate_plugins.py
 
-  # Behavior of the plugin's hooks: each test runs the command the plugin's
+  # The `test` contract. Hooks: each test runs the command the plugin's
   # hooks.json declares, through sh, on synthetic inputs (transcripts, and a
-  # cache entry whose repository is a local git repository). Standard library
-  # only, on the runner's python3; the tests need sh and git and fail, never
-  # skip, without them. Ubuntu's sh is dash, which keeps the hook scripts to
-  # POSIX sh.
-  test-plugins:
+  # cache entry whose repository is a local git repository); Ubuntu's sh is
+  # dash, which keeps the hook scripts to POSIX sh. Template: the test runs
+  # `copier copy` from this checkout and checks the generated project
+  # (ADR 0001: the template is tested by rendering it). The tests need sh,
+  # git and copier and fail, never skip, without them.
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -67,8 +68,20 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test the plugin hooks
-        run: python3 -m unittest discover -s tests -v
+      # Hash-checking mode: every package, transitive ones included, must
+      # match a pinned hash, and wheels only, so no build script runs (pip
+      # docs, "Secure installs"). The venv keeps Copier apart from the
+      # runner's system Python.
+      - name: Install the pinned Copier
+        run: |
+          python3 -m venv "$RUNNER_TEMP/copier"
+          "$RUNNER_TEMP/copier/bin/pip" install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt
+          echo "$RUNNER_TEMP/copier/bin" >> "$GITHUB_PATH"
+
+      - name: Test the plugin hooks and the template
+        run: |
+          copier --version
+          python3 -m unittest discover -s tests -v
 
   # The single required check of the ruleset on main (contract `gate`).
   # Requiring each job by name would mean editing the ruleset whenever a job
@@ -81,7 +94,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [validate-plugins, test-plugins]
+    needs: [validate-plugins, test]
     if: ${{ always() }}
 
     steps:
