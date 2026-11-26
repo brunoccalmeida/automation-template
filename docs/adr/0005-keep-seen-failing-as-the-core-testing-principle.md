@@ -34,17 +34,19 @@ Judgment, applying the criterion above:
 2. **Automated mutation testing is a pack option, not a gate.** Google, the largest documented user, runs it on changed code, does not block on it, and found no actionable global score. A score threshold in the core would go against that evidence, and the tool depends on the stack. The manual mutation in the current rule stays the stack-agnostic version.
 3. **Property-based testing, contract testing, BDD and static types are pack choices.** Each depends on the stack or the kind of code. Contract testing also fails Pact's own fit criteria for the projects this template serves: they automate tests of systems they usually do not own, often through the browser.
 4. **The test shape (pyramid and its variants) stays out.** No consensus is declared. A test automation project is usually the E2E or API layer of someone else's system, so a ratio rule would be misleading there.
-5. **Isolation and flakiness pass the criterion, but they belong to Mission 2a ([#3](https://github.com/brunoccalmeida/automation-template/issues/3)).** That mission already plans the flaky-test policy and the CI retry decision. The source projects diverge on retries ([INVENTORY.md](../INVENTORY.md), §8: the kit retries, the UAT refuses), and "evidence first" says not to settle a divergence before there is a tie-breaker. The core already forbids a retry or a longer timeout that hides a failure. The sources above are the starting point for #3.
+5. **Isolation passes the criterion and is already enforced, by the reviewer.** Item 5 of [`mission:reviewer`](../../plugins/mission/agents/reviewer.md) checks that each new test "starts from a clean, known state, creates its own data and does not depend on order", in all four projects today, as the inventory decided for the generic part (the specifics go to each project's `REVIEW.md`). Copying it into `core.md` would add always-loaded lines and one propagation mission per repository for a failure the reviewer already catches before the pull request (DRY). The evidence that would change this is a `reviewer-miss` on isolation.
+6. **Flakiness passes the criterion too, but belongs to Mission 2a ([#3](https://github.com/brunoccalmeida/automation-template/issues/3)).** That mission already plans the flaky-test policy and the CI retry decision. The source projects diverge on retries ([INVENTORY.md](../INVENTORY.md), §8: the kit retries, the UAT refuses), and "evidence first" says not to settle a divergence before there is a tie-breaker. Meanwhile the core already forbids a retry or a longer timeout that hides a failure. The sources above are the starting point for #3.
 
 ## Alternatives
 
 - **Add automated mutation testing as a CI gate with a score threshold:** rejected by the Google evidence (non-blocking, changed code only, no actionable global score) and because the core names no stack.
 - **Add a test-shape rule (pyramid ratios):** rejected; there is no consensus, and the ratios do not fit a project that is itself the top layer.
-- **Add an isolation rule to the core now:** deferred to #3, which decides it together with the retry policy instead of in two places.
+- **Add an isolation rule to the core now:** rejected while the reviewer enforces it in every project; it would duplicate that check in always-loaded context.
+- **Add a flaky-test rule to the core now:** deferred to #3, which decides it together with the retry policy.
 
 ## Consequences
 
 - `core.md` does not change, so nothing has to be propagated to the kit, nextjs and the UAT.
-- Mission 2a (#3) starts its flaky-test policy from the isolation and flakiness sources above.
-- The packs (#7, #8) may add mutation testing, property-based testing or contract testing as options, each justified in its own pack.
-- Reopen when a new fact appears: a primary source that makes mutation testing a blocking gate in current practice, or a test-shape model that reaches declared consensus.
+- Mission 2a (#3) starts its flaky-test policy from the flakiness sources above. Until Copier resumes, the core's ban on a retry that hides a failure is the only flakiness rule.
+- The packs (#7, #8) may add mutation testing, property-based testing, contract testing or BDD as options. Their cost in each pack was not assessed here, because the stack-agnostic criterion already kept them out of the core; each pack mission weighs it with its own stack.
+- Reopen when a new fact appears: a primary source that makes mutation testing a blocking gate in current practice, a test-shape model that reaches declared consensus, or a `reviewer-miss` on isolation.
