@@ -48,6 +48,6 @@ Facts, from the official documentation (read 2026-11-26) and from probes with zi
 ## Consequences
 
 - Known gap: UTF-16 without a byte order mark passes as binary. Windows PowerShell 5.1 writes the mark, which is the case seen in uat#26.
-- [`tests/test_check_text_encoding.py`](../../tests/test_check_text_encoding.py) runs the script on throwaway repositories, and each of its branches was seen failing by mutation. gitleaks and zizmor were seen blocking the probes above. In CI, a probe commit on the pull request shows the three jobs failing `ci-passed`, and its revert shows them passing.
+- [`tests/test_check_text_encoding.py`](../../tests/test_check_text_encoding.py) runs the script on throwaway repositories, and each of its branches was seen failing by mutation. gitleaks and zizmor were seen blocking the probes above, run locally with the pinned versions. In CI, a probe commit on the pull request (a UTF-16 file and an action pinned by tag) failed `text-encoding` and `workflow-audit`, and through `core-checks` the `ci-passed` gate; its revert turned them green. The secret probe stays out of CI: `secret-scan` reads every commit of the pull request, so a secret pushed once fails the branch until its history is rewritten.
 - `$/` does not work on GitHub Enterprise Server. A project hosted there calls the workflow with `./` and an inline `# zizmor: ignore[self-repository]` naming the reason.
 - The gitleaks and zizmor versions are bumped by hand. Dependabot bumps the action, not its `version` input or the gitleaks release.

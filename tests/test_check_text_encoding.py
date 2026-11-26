@@ -37,8 +37,8 @@ def setUpModule() -> None:
 
 
 class CheckTextEncodingTest(unittest.TestCase):
-    def _check(self, files: dict[str, bytes]) -> subprocess.CompletedProcess[str]:
-        """Stage files in a new repository and run the script in it."""
+    def _check(self, files: dict[str, bytes], prepare=None) -> subprocess.CompletedProcess[str]:
+        """Stage files in a new repository, run prepare(repository), then the script."""
         with tempfile.TemporaryDirectory() as tmp:
             repository = Path(tmp)
             subprocess.run([*GIT, "init", "-q"], cwd=repository, check=True, timeout=TIMEOUT_SECONDS)
@@ -47,6 +47,8 @@ class CheckTextEncodingTest(unittest.TestCase):
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(content)
             subprocess.run([*GIT, "add", "-A"], cwd=repository, check=True, timeout=TIMEOUT_SECONDS)
+            if prepare is not None:
+                prepare(repository)
             return subprocess.run(
                 [SH, str(SCRIPT)], cwd=repository, capture_output=True, text=True, timeout=TIMEOUT_SECONDS
             )
@@ -89,6 +91,25 @@ class CheckTextEncodingTest(unittest.TestCase):
         self.assertRejected(result, "a.txt", "not UTF-8")
         self.assertIn("b.txt", result.stderr)
         self.assertNotIn("ok.txt", result.stderr)
+
+    def test_a_staged_file_missing_from_the_working_tree_is_reported(self) -> None:
+        # Checking nothing under that name would pass a file nobody read
+        result = self._check({"gone.txt": UTF8_TEXT.encode("utf-8")}, lambda repository: (repository / "gone.txt").unlink())
+        self.assertRejected(result, "gone.txt", "not found in the working tree")
+
+    def test_a_submodule_is_skipped(self) -> None:
+        # A gitlink is a directory in the working tree; its files belong to
+        # its own repository, so it is neither read nor reported
+        def add_gitlink(repository: Path) -> None:
+            (repository / "vendor" / "lib").mkdir(parents=True)
+            subprocess.run(
+                [*GIT, "update-index", "--add", "--cacheinfo", f"160000,{'1' * 40},vendor/lib"],
+                cwd=repository, check=True, timeout=TIMEOUT_SECONDS,
+            )
+
+        result = self._check({"README.md": UTF8_TEXT.encode("utf-8")}, add_gitlink)
+        self.assertEqual(result.returncode, 0, f"rejected a submodule:\n{result.stderr}")
+        self.assertEqual(result.stderr, "")
 
     def test_outside_a_git_repository_fails_with_the_cause(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
