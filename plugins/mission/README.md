@@ -79,6 +79,19 @@ The reviewer is a gate, and a gate is trusted only after it is seen rejecting wh
 
 The answer key built from these records lives in [`evals/review/`](evals/README.md#review-whether-the-reviewer-finds-what-it-should): real merged missions, some with one planted defect and some clean.
 
+### Anthropic's native reviewers
+
+Anthropic ships its own reviewers. None of them replaces the `reviewer` agent, and none is part of the cycle for now ([#54](https://github.com/brunoccalmeida/automation-template/issues/54); documentation read in November 2026, Claude Code 2.1.327):
+
+| Reviewer | What it checks | Why it is not in the cycle |
+| --- | --- | --- |
+| `/code-review` (local) | "looks for correctness bugs", plus cleanups depending on effort, following `CLAUDE.md` ([Review code locally](https://code.claude.com/docs/en/code-review-local.md)) | "It doesn't read `REVIEW.md`", and the docs say nothing of the issue or the commit messages, so it cannot check scope against the issue, the RED record or the project's review checks. Whether it would add correctness findings the `reviewer` misses was not measured: the answer key would need a scaffold that commits the base and leaves the diff uncommitted |
+| `/code-review ultra` | The same, with every finding "independently reproduced and verified", in a cloud sandbox ([Ultrareview](https://code.claude.com/docs/en/ultrareview.md)) | Same reading limits. Bills usage credits after 3 one-time free runs on Pro, Max and Ultra, "typically $5 to $25" a review; `claude -p '/code-review ultra'` does not return the findings |
+| Code Review (managed, on the pull request) | Correctness, `CLAUDE.md` and `REVIEW.md` ([Code Review](https://code.claude.com/docs/en/code-review.md)) | "Plans: Team and Enterprise", billed on usage credits; the docs do not say it reads the issue or the commit messages |
+| GitHub Action running the `code-review` plugin | Whatever the prompt asks; follows `CLAUDE.md` ([GitHub Actions](https://code.claude.com/docs/en/github-actions.md)) | Adds a GitHub Actions run to every pull request for a review of the same kind as `/code-review`; the docs do not say it reads `REVIEW.md` |
+
+So the `reviewer` agent keeps the checks no native reviewer documents (scope against the issue, the RED record, `REVIEW.md`). Reopen the question if a `reviewer-miss` turns out to be a correctness bug that `/code-review` would have caught, or if the project moves to a Team or Enterprise plan.
+
 ## Ship in a fresh chat
 
 Run `/mission:ship-pr <n>` as the **first message of a new chat**: `/clear` first, in the chat that implemented the mission. `ship-pr` needs nothing from that conversation (the pull request body holds the mission record, and the session summary holds the state), but every tool call re-sends the whole context, and waiting for CI and the merge takes dozens of calls. Measured on 8 missions of a project that uses this plugin, a fresh chat would have cost about 10% less per mission (6 to 14%) ([#30](https://github.com/brunoccalmeida/automation-template/issues/30)).
