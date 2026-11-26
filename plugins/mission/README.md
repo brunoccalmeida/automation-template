@@ -92,6 +92,20 @@ Anthropic ships its own reviewers. None of them replaces the `reviewer` agent, a
 
 So the `reviewer` agent keeps the checks no native reviewer documents (scope against the issue, the RED record, `REVIEW.md`). Reopen the question if a `reviewer-miss` turns out to be a correctness bug that `/code-review` would have caught, or if the project moves to a Team or Enterprise plan.
 
+### A reviewer of our own on the pull request
+
+A second agent that reviews the open pull request would add nothing to the `reviewer`, so the cycle has none ([#56](https://github.com/brunoccalmeida/automation-template/issues/56); evidence from the 180 pull requests merged in the four projects using the plugin, November 2026). It would read the same diff with the same model, so it would share the `reviewer`'s blind spots. And what only the pull request stage sees is already covered, or has never held a defect:
+
+| Only on the pull request | Covered by | Evidence |
+| --- | --- | --- |
+| The body, which becomes the squash message when the repository uses `PR_BODY` ("default to the pull request's body", [Update a repository](https://docs.github.com/en/rest/repos/repos?apiVersion=2022-11-28#update-a-repository)) | `ship-pr` step 5, for the closing references | Its only real defect was a missing closing keyword (kit#51 left #15 open). No `reviewer-miss` traces to anything else in a body |
+| The squash title (`PR_TITLE`: "default to the pull request's title") | Nothing | No defect seen |
+| CI on the head SHA | The `gate`, read by SHA in `ship-pr` step 4 | |
+| Commits after the review (fixes of its findings) | `check` and `test` run again (`close-mission` step 5) | Both `reviewer-miss` issues ([#39](https://github.com/brunoccalmeida/automation-template/issues/39), [#51](https://github.com/brunoccalmeida/automation-template/issues/51)) came from the reviewed diff, not from a later fix |
+| A merge of the main branch to resolve `DIRTY` | `check` and `test` run again (`ship-pr` step 2) | 3 merges in 180 pull requests (kit#46, nextjs#54, UAT#154), two of them only in the session summary; none led to a `reviewer-miss` |
+
+Reopen the question if a `reviewer-miss` traces to something only the pull request held (a body, a commit pushed after the review, a conflict merge), or if conflict merges become common, for example if more than one pull request is open at a time.
+
 ## Ship in a fresh chat
 
 Run `/mission:ship-pr <n>` as the **first message of a new chat**: `/clear` first, in the chat that implemented the mission. `ship-pr` needs nothing from that conversation (the pull request body holds the mission record, and the session summary holds the state), but every tool call re-sends the whole context, and waiting for CI and the merge takes dozens of calls. Measured on 8 missions of a project that uses this plugin, a fresh chat would have cost about 10% less per mission (6 to 14%) ([#30](https://github.com/brunoccalmeida/automation-template/issues/30)).
