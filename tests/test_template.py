@@ -33,8 +33,8 @@ def setUpModule() -> None:
     """
     if COPIER is None:
         raise RuntimeError(
-            "copier not found on PATH; install it with "
-            "pip install --require-hashes -r .github/tools/copier/requirements.txt"
+            "copier not found on PATH; install it in a virtual environment with "
+            "pip install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt"
         )
 
 
