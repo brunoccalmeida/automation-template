@@ -1,0 +1,14 @@
+# Copier template configuration (ADR 0001). Copier docs, "Configuring a
+# template": https://copier.readthedocs.io/en/stable/configuring/
+
+# The generated project comes from template/ only; the rest of this
+# repository (the mission plugin, docs, CI) belongs to the template itself
+_subdirectory: template
+
+# The version the template is tested with (.github/tools/copier/)
+_min_copier_version: "9.19.1"
+
+project_name:
+  type: str
+  help: Project name, used as the README title
+  validator: "{% if not project_name.strip() %}The project name cannot be empty{% endif %}"
