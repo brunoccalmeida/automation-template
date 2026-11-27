@@ -1,0 +1,73 @@
+# OpenSSF Scorecard: scores this repository's supply-chain practices (pinned
+# actions, token permissions, branch protection, Dependabot...) and publishes
+# the result to api.scorecard.dev, which serves the README badge. Taken from
+# the official example (ossf/scorecard-action v2.6.0, examples/scorecard.yml).
+#
+# Not part of the ci-passed gate: Scorecard supports only push and schedule
+# on the default branch ("pull_request" is experimental), so it reports on
+# main instead of blocking a pull request. Publishing the results restricts
+# this file: no top-level or job-level env or defaults, no write permission
+# at the workflow level, id-token only on the Scorecard job, and only the
+# approved steps below (scorecard-action README, "Workflow restrictions").
+
+name: Scorecard supply-chain security
+
+on:
+  # For the Branch-Protection check; only the default branch is supported
+  branch_protection_rule:
+  # Keeps the Maintained check up to date
+  schedule:
+    - cron: '15 14 * * 0'
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+# Blocks all cache access (official example; added to Actions in September
+# 2026, so some linters may not know it yet)
+cache-mode: none
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Scorecard only supports the default branch
+    if: ${{ github.event.repository.default_branch == github.ref_name }}
+    permissions:
+      security-events: write # Upload the SARIF to code scanning
+      id-token: write # Sign the results published to api.scorecard.dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The example at v2.6.0 still pins v2.5.0; this is the commit the
+      # v2.6.0 tag points to (gh api repos/ossf/scorecard-action/git/tags)
+      - name: Run analysis
+        uses: ossf/scorecard-action@23f22cd43608bae7a1f1fa2603d7314dee9538a5 # v2.6.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+          # A rejected publish fails the run instead of leaving a stale badge
+          fail_on_publish_error: true
+
+      - name: Upload artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - name: Upload to code scanning
+        if: ${{ always() }}
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: results.sarif
