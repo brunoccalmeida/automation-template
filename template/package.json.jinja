@@ -11,7 +11,8 @@
     "lint": "eslint --max-warnings=0 .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run check:deps",
+    "check:deps": "node scripts/check-dependency-ignores.ts",
     "test": "playwright test",
     "smoke": "playwright test --grep @smoke"
   },
@@ -19,11 +20,14 @@
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
+    "@types/semver": "7.8.0",
     "eslint": "10.15.0",
     "eslint-plugin-playwright": "2.12.2",
     "prettier": "3.10.1",
+    "semver": "7.8.6",
     "typescript": "6.0.3",
     "typescript-eslint": "8.73.0",
+    "yaml": "2.9.1",
     "zod": "4.6.7"
   }
 }

@@ -40,7 +40,9 @@ _skip_if_exists:
   - tsconfig.json
   - eslint.config.mjs
   - playwright.config.ts
+  - osv-scanner.toml
   - "src/**"
+  - "scripts/**"
   - "tests/**"
 
 # Each pack's files, left out of a project that did not choose it, and each
@@ -60,7 +62,11 @@ _exclude:
   - "{% if pack != 'ts-playwright' %}tsconfig.json{% endif %}"
   - "{% if pack != 'ts-playwright' %}eslint.config.mjs{% endif %}"
   - "{% if pack != 'ts-playwright' %}playwright.config.ts{% endif %}"
+  - "{% if pack != 'ts-playwright' %}osv-scanner.toml{% endif %}"
   - "{% if pack != 'ts-playwright' %}src{% endif %}"
+  # Anchored: patterns follow gitignore rules, and a bare "scripts" would also
+  # drop the core's .github/scripts
+  - "{% if pack != 'ts-playwright' %}/scripts{% endif %}"
   - "{% if pack != 'ts-playwright' %}tests{% endif %}"
   - "{% if 'api' not in (test_types or []) %}tests/api{% endif %}"
   - "{% if 'e2e' not in (test_types or []) %}tests/e2e{% endif %}"

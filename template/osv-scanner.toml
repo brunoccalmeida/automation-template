@@ -1,0 +1,17 @@
+# Vulnerability exceptions for the `audit` job of .github/workflows/ci.yml
+# (OSV-Scanner, https://google.github.io/osv-scanner/configuration/).
+#
+# Policy: any known vulnerability fails the job, dev dependencies included
+# (they are what this project runs). When a patched version exists, pin it in
+# package.json "overrides"; never `npm audit fix --force` (it can downgrade a
+# major) nor continue-on-error. Only when no fix is published, and only if the
+# vulnerable code is not exploitable here, add an exception below with:
+# - a reason that says why it is not exploitable in this repository;
+# - an effectiveUntil at most 30 days ahead: when it expires the job fails
+#   again and forces a new decision;
+# - a tracking issue, closed when the exception is removed.
+#
+# [[IgnoredVulns]]
+# id = "GHSA-xxxx-xxxx-xxxx"
+# effectiveUntil = 2026-01-31
+# reason = "Why it is not exploitable here. Tracking: #N"

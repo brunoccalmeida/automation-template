@@ -14,8 +14,11 @@ own.
 Run: python3 -m unittest discover -s tests/packs -v
 """
 
+import hashlib
 import http.server
+import json
 import os
+import platform
 import re
 import shutil
 import socket
@@ -23,6 +26,7 @@ import subprocess
 import tempfile
 import threading
 import unittest
+import urllib.request
 from pathlib import Path
 
 TEMPLATE_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -37,6 +41,34 @@ TYPE_FILES = {"api": "tests/api/smoke.spec.ts", "e2e": "tests/e2e/smoke.spec.ts"
 CI_WORKFLOW = ".github/workflows/ci.yml"
 DEPENDABOT = ".github/dependabot.yml"
 GATE = "ci-passed"
+# Environment variables Claude Code sets in the commands its tools run
+# (code.claude.com/docs/en/env-vars): the pack's reporter reads one of them,
+# so every test starts without both and sets them only on purpose
+AGENT_VARIABLES = ("CLAUDECODE", "CLAUDE_CODE_CHILD_SESSION")
+# The scanner the generated audit job runs: osv-scanner-action v2.7.1 runs the
+# image ghcr.io/google/osv-scanner-action:v2.7.1 (its action.yml). The same
+# release's binary, checked against the release's osv-scanner_SHA256SUMS, so
+# the test proves the policy file the job reads. Bump both with the action
+OSV_VERSION = "2.7.1"
+OSV_BINARIES = {
+    ("Linux", "x86_64"): ("osv-scanner_linux_amd64", "fb7dab19a8bd9bbe5c3189f09d4b7ee1820c9553a23bac202648a56efd2f6ee8"),
+    ("Windows", "AMD64"): ("osv-scanner_windows_amd64.exe", "7121dcf420aefbbf89a7f0050c4d3094e079ff93afd334dfc96f16b02ec85800"),
+    ("Darwin", "arm64"): ("osv-scanner_darwin_arm64", "b22c02877a811c8f78956e8643efa554932b7378f590d13f8e97d4e9448a29f3"),
+}
+# A lockfile with a release that has known advisories: lodash 4.17.20 (fixed
+# in 4.17.21, GHSA-35jh-r3h4-6jhm among others)
+VULNERABLE_LOCKFILE = {
+    "name": "probe",
+    "lockfileVersion": 3,
+    "requires": True,
+    "packages": {
+        "": {"name": "probe", "dependencies": {"lodash": "4.17.20"}},
+        "node_modules/lodash": {
+            "version": "4.17.20",
+            "resolved": "https://registry.npmjs.org/lodash/-/lodash-4.17.20.tgz",
+        },
+    },
+}
 SUT_PAGE = b"<!doctype html><html><head><title>System under test</title></head><body>Up</body></html>"
 # A test that only passes on its retry: Playwright reports it as flaky
 # (playwright.dev, "Retries")
@@ -76,8 +108,26 @@ def _generate(destination: Path, test_types: str) -> None:
 
 def _environment(**variables: str) -> dict[str, str]:
     """The current environment without the variables the suite reads, plus the given ones."""
-    env = {name: value for name, value in os.environ.items() if name not in ("BASE_URL", "CI")}
+    env = {name: value for name, value in os.environ.items() if name not in ("BASE_URL", "CI", *AGENT_VARIABLES)}
     return {**env, **variables}
+
+
+def _osv_scanner(directory: Path) -> Path:
+    """Download the pinned osv-scanner into directory and check its SHA-256."""
+    key = (platform.system(), platform.machine())
+    if key not in OSV_BINARIES:
+        raise RuntimeError(f"no pinned osv-scanner {OSV_VERSION} binary for {key}; add it from the release's SHA256SUMS")
+    name, sha256 = OSV_BINARIES[key]
+    url = f"https://github.com/google/osv-scanner/releases/download/v{OSV_VERSION}/{name}"
+    with urllib.request.urlopen(url, timeout=TIMEOUT_SECONDS) as response:  # noqa: S310 (a fixed https URL)
+        content = response.read()
+    actual = hashlib.sha256(content).hexdigest()
+    if actual != sha256:
+        raise RuntimeError(f"{name} SHA-256 is {actual}, expected {sha256}")
+    binary = directory / name
+    binary.write_bytes(content)
+    binary.chmod(0o755)
+    return binary
 
 
 def _free_port() -> int:
@@ -206,6 +256,46 @@ class PackProjectTest(unittest.TestCase):
         self.assertRegex(result.stdout + result.stderr, r"\b1 flaky\b", "the test was not retried in CI")
         self.assertNotEqual(result.returncode, 0, "a flaky test passed the build")
 
+    def test_output_is_compact_in_a_command_an_agent_runs(self) -> None:
+        # The list reporter prints one line per test, named; dot prints one
+        # character per test and only the failures in full (playwright.dev,
+        # "Reporters"). An agent pays for every line it reads
+        title = "the system under test answers"
+        human = self._npm("test", BASE_URL=self.base_url)
+        self.assertIn(title, human.stdout, "a person no longer sees each test")
+        agent = self._npm("test", BASE_URL=self.base_url, CLAUDE_CODE_CHILD_SESSION="1")
+        self.assertEqual(agent.returncode, 0, f"npm test failed under an agent:\n{agent.stdout}\n{agent.stderr}")
+        self.assertNotIn(title, agent.stdout, "an agent still gets one line per test")
+        self.assertRegex(agent.stdout, r"\b2 passed\b", "the summary is gone under an agent")
+
+    def test_a_failure_stays_readable_in_compact_output(self) -> None:
+        self._with_spec("untagged.spec.ts", UNTAGGED_FAILING_SPEC)
+        result = self._npm("test", "--", "tests/api/untagged.spec.ts", BASE_URL=self.base_url, CLAUDE_CODE_CHILD_SESSION="1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not part of the smoke", result.stdout, "the failing test is not named")
+        self.assertIn("toBe", result.stdout, "the failed assertion is not shown")
+
+    def test_ci_writes_the_html_report(self) -> None:
+        report = self.project / "playwright-report"
+        self.addCleanup(shutil.rmtree, report, True)
+        result = self._npm("test", BASE_URL=self.base_url, CI="true")
+        self.assertEqual(result.returncode, 0, f"npm test failed in CI:\n{result.stdout}\n{result.stderr}")
+        self.assertTrue((report / "index.html").is_file(), "no HTML report in CI")
+
+    def test_sentinel_fails_the_check_once_the_ignore_is_no_longer_needed(self) -> None:
+        # The Dependabot ignore of the next TypeScript major has one reason:
+        # typescript-eslint's peer rejects it. A peer that accepts it means
+        # the ignore now only hides the upgrade, so `check` fails
+        manifest = self.project / "node_modules" / "typescript-eslint" / "package.json"
+        original = manifest.read_text(encoding="utf-8")
+        self.addCleanup(manifest.write_text, original, encoding="utf-8", newline="\n")
+        data = json.loads(original)
+        data["peerDependencies"]["typescript"] = ">=4.8.4 <99.0.0"
+        manifest.write_text(json.dumps(data), encoding="utf-8", newline="\n")
+        result = self._npm("run", "check")
+        self.assertNotEqual(result.returncode, 0, f"the check passed with an ignore that is no longer needed:\n{result.stdout}")
+        self.assertIn(f"Remove the typescript ignore from {DEPENDABOT}", result.stdout + result.stderr)
+
     def test_ci_runs_the_pack_contracts_inside_the_gate(self) -> None:
         text = (self.project / CI_WORKFLOW).read_text(encoding="utf-8")
         for job, command in (("check", "npm run check"), ("test", "npm test")):
@@ -214,7 +304,7 @@ class PackProjectTest(unittest.TestCase):
                 self.assertIn(f"run: {command}\n", text)
         needs = re.search(rf"\n  {GATE}:\n(?:    .*\n)*?    needs: \[([^\]]*)\]", text)
         self.assertIsNotNone(needs, "no needs in the gate")
-        self.assertEqual(sorted(part.strip() for part in needs.group(1).split(",")), ["check", "core-checks", "test"])
+        self.assertEqual(sorted(part.strip() for part in needs.group(1).split(",")), ["audit", "check", "core-checks", "test"])
         self.assertIn("run: npm ci\n", text)
         self.assertIn("npx playwright install --with-deps chromium", text, "e2e needs the browser in CI")
         self.assertIn("node-version-file: .node-version", text)
@@ -225,6 +315,33 @@ class PackProjectTest(unittest.TestCase):
         self.assertIsNotNone(block, "no npm ecosystem")
         self.assertIn("default-days: 7", block.group(0))
         self.assertIn('versioning-strategy: "increase"', block.group(0))
+        self.assertRegex(
+            block.group(0),
+            r'- dependency-name: "typescript"\n\s+update-types: \["version-update:semver-major"\]',
+            "the TypeScript major that typescript-eslint rejects is not ignored",
+        )
+
+    def test_ci_uploads_the_html_report_even_when_tests_fail(self) -> None:
+        text = (self.project / CI_WORKFLOW).read_text(encoding="utf-8")
+        test_job = re.search(r"\n  test:\n(?:(?:    .*)?\n)*", text)
+        self.assertIsNotNone(test_job, "no test job")
+        upload = re.search(r"uses: actions/upload-artifact@[0-9a-f]{40} # v\S+\n(?:        .*\n)+", test_job.group(0))
+        self.assertIsNotNone(upload, "the test job uploads no artifact")
+        self.assertIn("path: playwright-report", upload.group(0))
+        step = test_job.group(0)[: upload.start()].rsplit("- name:", 1)[1]
+        self.assertIn("if: ${{ !cancelled() }}", step, "a failing run, the one worth reading, uploads no report")
+
+    def test_ci_audits_the_lockfile_with_the_pinned_scanner(self) -> None:
+        text = (self.project / CI_WORKFLOW).read_text(encoding="utf-8")
+        audit = re.search(r"\n  audit:\n(?:(?:    .*)?\n)*", text)
+        self.assertIsNotNone(audit, "no audit job")
+        self.assertRegex(
+            audit.group(0),
+            rf"uses: google/osv-scanner-action/\.github/workflows/osv-scanner-reusable\.yml@[0-9a-f]{{40}} # v{re.escape(OSV_VERSION)}\n",
+            "the audit job does not run the scanner version this test proves",
+        )
+        self.assertIn("--lockfile=package-lock.json", audit.group(0))
+        self.assertIn("upload-sarif: false", audit.group(0))
 
     def test_git_ignores_local_and_generated_files(self) -> None:
         _ok("git", "init", "-q", cwd=self.project)
@@ -235,6 +352,78 @@ class PackProjectTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(_run("git", "check-ignore", "-q", path, cwd=self.project).returncode, 0, f"{path} is not ignored")
         self.assertNotEqual(_run("git", "check-ignore", "-q", ".env.example", cwd=self.project).returncode, 0, ".env.example is ignored")
+
+
+class AuditPolicyTest(unittest.TestCase):
+    """The generated project's audit, run with the scanner its CI job runs.
+
+    Each probe copies the generated osv-scanner.toml next to a lockfile, so the
+    scan reads the policy the project ships. Exit code 1 means vulnerabilities
+    were found; anything else non-zero is a scan error (osv-scanner, "Usage",
+    return codes), which must not pass for a finding.
+    """
+
+    project: Path
+    scanner: Path
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls._tmp = tempfile.TemporaryDirectory()
+        root = Path(cls._tmp.name)
+        cls.project = root / "project"
+        try:
+            _generate(cls.project, "[e2e, api]")
+            cls.scanner = _osv_scanner(root)
+        except Exception:
+            cls._tmp.cleanup()
+            raise
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._tmp.cleanup()
+
+    def _scan(self, directory: Path, *args: str) -> subprocess.CompletedProcess[str]:
+        return _run(str(self.scanner), *args, "--lockfile=package-lock.json", cwd=directory)
+
+    def _vulnerable(self, extra_policy: str = "") -> Path:
+        directory = Path(tempfile.mkdtemp(dir=self._tmp.name))
+        (directory / "package-lock.json").write_text(json.dumps(VULNERABLE_LOCKFILE), encoding="utf-8", newline="\n")
+        policy = (self.project / "osv-scanner.toml").read_text(encoding="utf-8")
+        (directory / "osv-scanner.toml").write_text(policy + extra_policy, encoding="utf-8", newline="\n")
+        return directory
+
+    def _exceptions(self, directory: Path, until: str) -> str:
+        """An exception for every advisory found in directory, effective until the given date."""
+        found = self._scan(directory, "--format=json")
+        self.assertEqual(found.returncode, 1, f"the probe found no vulnerability:\n{found.stdout}\n{found.stderr}")
+        ids = sorted(
+            {
+                vulnerability["id"]
+                for result in json.loads(found.stdout)["results"]
+                for package in result["packages"]
+                for vulnerability in package["vulnerabilities"]
+            }
+        )
+        return "".join(
+            f'\n[[IgnoredVulns]]\nid = "{vid}"\neffectiveUntil = {until}\nreason = "Probe of the policy"\n' for vid in ids
+        )
+
+    def test_the_generated_lockfile_has_no_known_vulnerability(self) -> None:
+        result = self._scan(self.project)
+        self.assertEqual(result.returncode, 0, f"the pack's pins carry a known vulnerability:\n{result.stdout}\n{result.stderr}")
+
+    def test_a_known_vulnerability_fails_the_audit(self) -> None:
+        result = self._scan(self._vulnerable())
+        self.assertEqual(result.returncode, 1, f"the audit did not report lodash 4.17.20:\n{result.stdout}\n{result.stderr}")
+        self.assertIn("lodash", result.stdout)
+
+    def test_an_exception_holds_only_until_it_expires(self) -> None:
+        probe = self._vulnerable()
+        for until, expected in (("2999-01-01", 0), ("2000-01-01", 1)):
+            with self.subTest(effective_until=until):
+                directory = self._vulnerable(self._exceptions(probe, until))
+                result = self._scan(directory)
+                self.assertEqual(result.returncode, expected, f"exception until {until}:\n{result.stdout}\n{result.stderr}")
 
 
 class SingleTestTypeTest(unittest.TestCase):
@@ -270,7 +459,7 @@ class PackQuestionsTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp) / "project"
             _ok(COPIER, "copy", "--vcs-ref=HEAD", "--defaults", "--data", "project_name=Demo Project", str(TEMPLATE_ROOT), str(project))
-            for path in ("package.json", "package-lock.json", "playwright.config.ts", ".node-version", "tests", "src", ".env.example", ".gitignore"):
+            for path in ("package.json", "package-lock.json", "playwright.config.ts", ".node-version", "tests", "src", "scripts", ".env.example", ".gitignore", "osv-scanner.toml"):
                 with self.subTest(path=path):
                     self.assertFalse((project / path).exists(), f"{path} rendered with no pack")
 
