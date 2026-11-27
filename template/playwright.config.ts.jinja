@@ -1,0 +1,39 @@
+import { defineConfig{% if 'e2e' in test_types %}, devices{% endif %} } from '@playwright/test';
+import { env } from './src/config/env.ts';
+
+export default defineConfig({
+  testDir: './tests',
+  fullyParallel: true,
+  // A test.only committed by mistake would silently skip the rest of the suite
+  forbidOnly: env.CI,
+  // Retries diagnose, they do not pass a build (docs/FLAKY_TESTS.md): a test
+  // that fails and then passes on the same commit is proven flaky in one run,
+  // and failOnFlakyTests turns that run red so the flake gets an issue
+  retries: env.CI ? 2 : 0,
+  failOnFlakyTests: env.CI,
+  // github annotates the failures on the pull request; list keeps them
+  // readable in the log
+  reporter: env.CI ? [['github'], ['list']] : [['list']],
+  use: {
+    baseURL: env.BASE_URL,
+    // A trace of the retry shows what differed from the failed attempt
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+  },
+  projects: [
+{%- if 'api' in test_types %}
+    {
+      // The request fixture only: no browser starts
+      name: 'api',
+      testDir: './tests/api',
+    },
+{%- endif %}
+{%- if 'e2e' in test_types %}
+    {
+      name: 'chromium',
+      testDir: './tests/e2e',
+      use: { ...devices['Desktop Chrome'] },
+    },
+{%- endif %}
+  ],
+});

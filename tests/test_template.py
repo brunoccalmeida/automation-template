@@ -223,12 +223,17 @@ class GeneratedProjectTest(unittest.TestCase):
         # This repository follows its own core (#4): each template-owned file
         # it also has is the same file, so changing one copy without the
         # other fails here. Copier does not generate this repository: it is
-        # the template's source, and its README and CLAUDE.md are its own
+        # the template's source, and its README and CLAUDE.md are its own.
+        # Only the core's files count: a pack's files (its .gitignore) are
+        # not rendered here, and this repository has no pack
         source = TEMPLATE_ROOT / "template"
         shared = sorted(
             name
             for name in (path.relative_to(source).as_posix() for path in source.rglob("*") if path.is_file())
-            if not name.endswith(".jinja") and name not in PROJECT_OWNED and (TEMPLATE_ROOT / name).is_file()
+            if not name.endswith(".jinja")
+            and name not in PROJECT_OWNED
+            and (self.project / name).is_file()
+            and (TEMPLATE_ROOT / name).is_file()
         )
         self.assertEqual([name for name in ADOPTED if name not in shared], [], "template-owned files this repository no longer uses")
         for name in shared:

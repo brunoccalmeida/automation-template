@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+
+# Local configuration (may hold credentials); .env.example is committed
+.env
+
+# Playwright output
+test-results/
+playwright-report/
+blob-report/

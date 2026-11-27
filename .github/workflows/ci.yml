@@ -83,6 +83,37 @@ jobs:
           copier --version
           python3 -m unittest discover -s tests -v
 
+  # The `test` contract for the ts-playwright pack (#7): the test generates a
+  # project with the pack and runs what that project runs (npm ci, check,
+  # test, smoke) against a local server, as pawamoy/copier-uv's CI runs its
+  # generated project. Apart from the test job because it needs Node and a
+  # browser, which the core does not (tests/packs/ has no __init__.py, so
+  # the core's discover does not reach it).
+  pack-ts-playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The Node the pack pins for the projects it generates
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: template/.node-version
+
+      - name: Install the pinned Copier
+        run: |
+          python3 -m venv "$RUNNER_TEMP/copier"
+          "$RUNNER_TEMP/copier/bin/pip" install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt
+          echo "$RUNNER_TEMP/copier/bin" >> "$GITHUB_PATH"
+
+      - name: Test the ts-playwright pack
+        run: python3 -m unittest discover -s tests/packs -v
+
   # The core's enforcement (UTF-8 text, secret scan, workflow audit), the
   # same reusable workflow every generated project gets (#71). A called
   # workflow's job succeeds only when all of its jobs do.
@@ -104,7 +135,7 @@ jobs:
   ci-passed:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [validate-plugins, test, core-checks]
+    needs: [validate-plugins, test, pack-ts-playwright, core-checks]
     if: ${{ always() }}
 
     steps:

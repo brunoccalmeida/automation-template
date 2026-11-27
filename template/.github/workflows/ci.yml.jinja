@@ -29,6 +29,71 @@ jobs:
     uses: $/.github/workflows/core-checks.yml
     permissions:
       contents: read
+{%- if pack == 'ts-playwright' %}
+
+  # Contract `check`: type check, lint and format check
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The same Node as local development: one source (.node-version)
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      # ci, not install: fails if package-lock.json and package.json disagree
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check, lint and format check
+        run: npm run check
+
+  # Contract `test`: the whole suite, smoke included, against BASE_URL. Set
+  # the BASE_URL variable in the repository settings (Actions variables, not
+  # secrets: a URL is not a secret); without it the suite stops at startup
+  # naming the variable (src/config/env.ts)
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+{%- if 'e2e' in test_types %}
+
+      # The browser and its system libraries, Chromium only (playwright.dev,
+      # "Continuous Integration" and "Browsers"); the version comes from the
+      # installed @playwright/test, so it never drifts from the lockfile
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+{%- endif %}
+
+      - name: Run the tests
+        run: npm test
+        env:
+{%- raw %}
+          BASE_URL: ${{ vars.BASE_URL }}
+{%- endraw %}
+{%- endif %}
 
   # The single required check of the ruleset (contract `gate`,
   # .github/rulesets/protect-main.json). Requiring each job by name would
@@ -39,7 +104,7 @@ jobs:
   {{ gate }}:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [core-checks]
+    needs: [core-checks{% if pack == 'ts-playwright' %}, check, test{% endif %}]
 {%- raw %}
     if: ${{ always() }}
 {%- endraw %}

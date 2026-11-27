@@ -21,3 +21,24 @@ updates:
       # Low risk and reviewed together: one PR for all actions
       github-actions:
         patterns: ["*"]
+{%- if pack == 'ts-playwright' %}
+
+  # The pack's dependencies, pinned exactly in package.json: bump the pin,
+  # never widen it. Majors match no group and get a PR of their own: a major
+  # is a human decision (release notes, peer dependencies)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: "increase"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+{%- endif %}
