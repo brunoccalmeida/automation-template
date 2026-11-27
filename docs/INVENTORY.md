@@ -201,7 +201,7 @@ Neither has them, and the template will:
 | --- | --- |
 | `allow`/`deny` permissions in `.claude/settings.json` (`--admin`, `push --force`, push to `main`) | 3 |
 | `SessionStart` hook (summary + open issues) and a hook that blocks reading/editing `.env` | 3 |
-| gitleaks and zizmor in CI; Scorecard | 3 / 7 |
+| gitleaks and zizmor in CI; Scorecard (this repository only, not the core: it needs a public repository, #9) | 3 / 7 |
 | Issue templates (mission with acceptance criteria) and PR template | 4 |
 | `start-mission` and `/new-project` skills (labels, ruleset, plan issues) | 2b / 4 |
 | ADRs, flaky policy, spike report template | 2a |
