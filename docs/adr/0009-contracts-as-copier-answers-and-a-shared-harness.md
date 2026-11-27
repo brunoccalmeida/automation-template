@@ -1,6 +1,6 @@
 # 9. Contracts as Copier answers, the marketplace in the core, and this repository on its own core
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0012](0012-github-files-rendered-by-the-core.md) (`main_branch` and `gate` have defaults)
 - **Date:** 2026-11-26
 
 ## Context

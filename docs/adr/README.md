@@ -14,6 +14,7 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0006](0006-resume-copier-for-the-core-and-the-ts-pack.md) | Resume Copier for the core and the `ts-playwright` pack | Accepted |
 | [0007](0007-test-the-template-by-generating-the-core.md) | Test the template by generating the core, with a hash-locked Copier | Accepted |
 | [0008](0008-core-rules-and-documents-in-the-generated-project.md) | Core rules and documents in the generated project: ownership, line endings and retries | Accepted |
-| [0009](0009-contracts-as-copier-answers-and-a-shared-harness.md) | Contracts as Copier answers, the marketplace in the core, and this repository on its own core | Accepted |
+| [0009](0009-contracts-as-copier-answers-and-a-shared-harness.md) | Contracts as Copier answers, the marketplace in the core, and this repository on its own core | Accepted; partly superseded by 0012 |
 | [0010](0010-claude-code-enforcement-in-the-core.md) | Claude Code enforcement in the core: deny rules and a SessionStart hook | Accepted |
 | [0011](0011-ci-enforcement-as-a-reusable-core-workflow.md) | CI enforcement in the core: a reusable workflow with encoding, secret scan and workflow audit | Accepted |
+| [0012](0012-github-files-rendered-by-the-core.md) | GitHub files rendered by the core: the CI caller, the ruleset, Dependabot and the mission templates | Accepted |
