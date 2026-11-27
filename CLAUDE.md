@@ -15,9 +15,13 @@ Values that the core and the [`mission`](plugins/mission/README.md) plugin use i
 | `gate` | `ci-passed` |
 | `session-summary` | `docs/PROJECT_SESSION_SUMMARY.md` |
 
+## Language
+
+Documentation language: English
+
 ## Exceptions to the core
 
-- **"Everything written to the repository is in English":** the review eval fixtures (`plugins/mission/evals/review/**/mission.diff`, `plugins/mission/evals/review/fixtures/`) and the graders that quote them keep their Brazilian Portuguese. Why: they are the historical diffs of merged missions, reviewed again by the suite; translating them would change what the reviewer is measured on and break the comparison with the recorded baselines.
+- **"Code and commit messages are in English" and the documentation language above:** the review eval fixtures (`plugins/mission/evals/review/**/mission.diff`, `plugins/mission/evals/review/fixtures/`) and the graders that quote them keep their Brazilian Portuguese. Why: they are the historical diffs of merged missions, reviewed again by the suite; translating them would change what the reviewer is measured on and break the comparison with the recorded baselines.
 
 ## Template architecture rules
 

@@ -279,6 +279,16 @@ class GeneratedProjectTest(unittest.TestCase):
             with self.subTest(role=role):
                 self.assertEqual(values.get(role), f"`{value}`")
 
+    def test_claude_md_names_the_documentation_language(self) -> None:
+        # The core fixes the language of code and commits only; the language
+        # of the documentation depends on who reads it, so each project's
+        # CLAUDE.md names it under the key the core points at (#65)
+        key = "Documentation language:"
+        self.assertTrue(f"`{key}`" in (TEMPLATE_ROOT / CORE_RULES).read_text(encoding="utf-8"), f"core.md does not point at `{key}` in CLAUDE.md")
+        for claude_md in (self.project / "CLAUDE.md", TEMPLATE_ROOT / "CLAUDE.md"):
+            with self.subTest(path=claude_md):
+                self.assertTrue(re.search(rf"(?m)^{key} \S", claude_md.read_text(encoding="utf-8")), f"{claude_md} has no `{key} <language>` line")
+
     def test_unanswered_contracts_take_their_defaults(self) -> None:
         # A project generated from the core alone has no stack, so no command
         # to fill in; "Not set" makes the plugin stop and ask, not guess. The
