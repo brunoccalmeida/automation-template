@@ -22,7 +22,8 @@ It is extracted from two existing projects, [uat-automation-framework](https://g
 | --- | --- | --- |
 | `ts-playwright` | Available | Playwright and TypeScript with `e2e` and `api` as test types: an environment validated at startup, lint, type and format checks, an OSV vulnerability audit, the HTML report as a CI artifact and compact output for the agent ([ADR 0014](docs/adr/0014-ts-playwright-pack-walking-skeleton.md), [ADR 0015](docs/adr/0015-ts-playwright-pack-hardening.md)) |
 | `python-behave-selenium` | Not yet available | Paused: it has a single source project, and the template takes in only what more than one source proves ([ADR 0006](docs/adr/0006-resume-copier-for-the-core-and-the-ts-pack.md), [#8](https://github.com/brunoccalmeida/automation-template/issues/8)) |
-| `none` | Available | The core alone; the contracts table reads "Not set" until the project fills it in |
+
+The answer `none` renders the core alone, with no pack: the contracts table reads "Not set" until the project fills it in.
 
 ## Architecture
 
@@ -61,7 +62,7 @@ You need Python 3.10 or newer, Git 2.27 or newer ([Copier installation](https://
    uv tool install copier==9.19.1    # or: pipx install copier==9.19.1
    ```
 
-2. Generate the project. Copier takes the latest release tag of the template ([Generating a project](https://copier.readthedocs.io/en/stable/generating/)); add `--vcs-ref v1.0.0` to pin one. It asks for the project name, the pack, the test types and the contracts, each with a default:
+2. Generate the project. Copier takes the latest release tag of the template ([Generating a project](https://copier.readthedocs.io/en/stable/generating/)); add `--vcs-ref v1.0.0` to pin one. It asks for the project name, then the pack (the default, `none`, renders the core alone; choose `ts-playwright` for the pack), the test types and the contracts, which have defaults:
 
    ```sh
    copier copy gh:brunoccalmeida/automation-template my-project
