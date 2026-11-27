@@ -62,7 +62,13 @@ class DependabotTest(unittest.TestCase):
         entries = re.findall(
             r'package-ecosystem:\s*"([^"]+)"\s*\n\s*directory:\s*"([^"]*)"', config
         )
-        self.assertTrue(entries, "no Dependabot entry parsed from .github/dependabot.yml")
+        declared = len(re.findall(r"^\s*- package-ecosystem:", config, re.MULTILINE))
+        self.assertEqual(
+            len(entries),
+            declared,
+            "an entry of .github/dependabot.yml was not parsed: write `directory:` (quoted) on the line after "
+            "`package-ecosystem:`, not `directories:`, so this test can check it",
+        )
         for ecosystem, directory in entries:
             if ecosystem == "github-actions":
                 continue
