@@ -21,3 +21,4 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0013](0013-new-project-applies-the-github-settings-with-a-shared-script.md) | `/new-project` applies the GitHub settings with a shared script | Accepted |
 | [0014](0014-ts-playwright-pack-walking-skeleton.md) | The `ts-playwright` pack as a walking skeleton chosen by an answer | Accepted |
 | [0015](0015-ts-playwright-pack-hardening.md) | Hardening of the `ts-playwright` pack: OSV audit, ignore sentinel, compact agent output, report as an artifact | Accepted |
+| [0016](0016-dependabot-for-the-pinned-ci-tools.md) | Dependabot for the pinned CI tools: `uv` for Copier, `npm` for the CLI with a test on `allowScripts`, the `.jinja` pins stay manual | Accepted |
