@@ -68,6 +68,8 @@ RULESET = ".github/rulesets/protect-main.json"
 DEPENDABOT = ".github/dependabot.yml"
 MISSION_FORM = ".github/ISSUE_TEMPLATE/1-mission.yml"
 PR_TEMPLATE = ".github/pull_request_template.md"
+NEW_PROJECT_SKILL = ".claude/skills/new-project/SKILL.md"
+SETTINGS_SCRIPT = ".github/scripts/apply-github-settings.sh"
 # zizmor's dependabot-cooldown audit flags fewer days by default (zizmor
 # docs, "Audit Rules", dependabot-cooldown)
 MIN_COOLDOWN_DAYS = 7
@@ -98,6 +100,7 @@ ADOPTED = (
     "docs/ai-workflow/AGENT_TOKEN_SPEND.md",
     ".github/workflows/core-checks.yml",
     ".github/scripts/check-text-encoding.sh",
+    ".github/scripts/apply-github-settings.sh",
     ".github/ISSUE_TEMPLATE/1-mission.yml",
     ".github/pull_request_template.md",
 )
@@ -350,6 +353,19 @@ class GeneratedProjectTest(unittest.TestCase):
         for name in REVIEWER_LISTS:
             with self.subTest(list=name):
                 self.assertTrue(any(line.startswith(f"- **{name}:**") for line in lines), f"no {name} list")
+
+    def test_new_project_skill_is_user_triggered_and_runs_the_shipped_script(self) -> None:
+        # It changes the repository's settings on GitHub, so only the user
+        # starts it (Skills, frontmatter reference: disable-model-invocation),
+        # and the script it runs ships with the project (#74)
+        skill = self.project / NEW_PROJECT_SKILL
+        self.assertTrue(skill.is_file(), f"{NEW_PROJECT_SKILL} not rendered")
+        lines = skill.read_text(encoding="utf-8").splitlines()
+        frontmatter = lines[1 : lines.index("---", 1)]
+        self.assertIn("name: new-project", frontmatter)
+        self.assertIn("disable-model-invocation: true", frontmatter)
+        self.assertIn(f"sh {SETTINGS_SCRIPT}", "\n".join(lines))
+        self.assertTrue((self.project / SETTINGS_SCRIPT).is_file(), f"{SETTINGS_SCRIPT} not rendered")
 
     def test_core_names_no_stack(self) -> None:
         pattern = re.compile(r"\b(" + "|".join(map(re.escape, STACK_TERMS)) + r")\b", re.IGNORECASE)
