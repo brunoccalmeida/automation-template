@@ -46,6 +46,8 @@ PROJECT_OWNED = (
     "docs/PROJECT_SESSION_SUMMARY.md",
     "docs/KNOWN_ISSUES.md",
     "docs/adr/README.md",
+    ".github/workflows/ci.yml",
+    ".github/dependabot.yml",
 )
 PROJECT_TEXT = "# Written by the project\n"
 # Answers to the contract questions, and the value each one renders in the
@@ -58,6 +60,21 @@ CONTRACT_ANSWERS = {
     "main_branch": ("main-branch", "trunk"),
     "gate": ("gate", "all-checks-passed"),
 }
+# What an unanswered contract renders: the commands stay "Not set", while the
+# branch and the gate default to the names the core's own CI uses (#6)
+CONTRACT_DEFAULTS = {"check": "Not set", "test": "Not set", "smoke": "Not set", "main-branch": "`main`", "gate": "`ci-passed`"}
+CI_WORKFLOW = ".github/workflows/ci.yml"
+RULESET = ".github/rulesets/protect-main.json"
+DEPENDABOT = ".github/dependabot.yml"
+MISSION_FORM = ".github/ISSUE_TEMPLATE/1-mission.yml"
+PR_TEMPLATE = ".github/pull_request_template.md"
+# zizmor's dependabot-cooldown audit flags fewer days by default (zizmor
+# docs, "Audit Rules", dependabot-cooldown)
+MIN_COOLDOWN_DAYS = 7
+# The parts of the mission record that close-mission writes in the PR body
+# (plugins/mission/skills/close-mission/SKILL.md, step 6)
+PR_RECORD_SECTIONS = ("Decisions", "Sources", "How the RED was seen", "Reviewer findings")
+REVIEWER_LISTS = ("Fixed", "False positives", "False negatives")
 # Tools, languages and stack-specific settings the core must not name (ADR
 # 0003: "The core never names a stack, a tool or a target type"). Whole
 # words, any case. Words that are also plain English (Behave) stay out, or
@@ -81,6 +98,8 @@ ADOPTED = (
     "docs/ai-workflow/AGENT_TOKEN_SPEND.md",
     ".github/workflows/core-checks.yml",
     ".github/scripts/check-text-encoding.sh",
+    ".github/ISSUE_TEMPLATE/1-mission.yml",
+    ".github/pull_request_template.md",
 )
 
 
@@ -252,16 +271,85 @@ class GeneratedProjectTest(unittest.TestCase):
             with self.subTest(role=role):
                 self.assertEqual(values.get(role), f"`{value}`")
 
-    def test_unanswered_contracts_read_not_set(self) -> None:
+    def test_unanswered_contracts_take_their_defaults(self) -> None:
         # A project generated from the core alone has no stack, so no command
-        # to fill in; "Not set" makes the plugin stop and ask, not guess
+        # to fill in; "Not set" makes the plugin stop and ask, not guess. The
+        # branch and the gate are the core's own: its CI names them (#6)
         with tempfile.TemporaryDirectory() as tmp:
             project = Path(tmp) / "project"
             _copier_copy(project)
             values = _contract_values(project / "CLAUDE.md")
-        for role, _ in CONTRACT_ANSWERS.values():
+            workflow = (project / CI_WORKFLOW).read_text(encoding="utf-8")
+            ruleset = json.loads((project / RULESET).read_text(encoding="utf-8"))
+        # This repository's ruleset describes the active one (CLAUDE.md,
+        # "Ruleset as code") and uses the defaults: one ruleset, not two
+        self.assertEqual(ruleset, json.loads((TEMPLATE_ROOT / RULESET).read_text(encoding="utf-8")), "the template's ruleset differs from this repository's")
+        for role, expected in CONTRACT_DEFAULTS.items():
             with self.subTest(role=role):
-                self.assertEqual(values.get(role), "Not set")
+                self.assertEqual(values.get(role), expected)
+        self.assertIn("\n  ci-passed:\n", workflow, "the default gate job is not ci-passed")
+
+    def test_gate_answer_must_be_a_job_id(self) -> None:
+        # The answer becomes the gate's job id, which "must start with a
+        # letter or _ and contain only alphanumeric characters, -, or _"
+        # (GitHub Docs, "Workflow syntax", jobs.<job_id>); anything else
+        # renders a workflow GitHub rejects, and the required check never runs
+        for answer in ("CI passed", 'ci"passed', "1-gate"):
+            with self.subTest(answer=answer), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaisesRegex(RuntimeError, "job id", msg=f"gate={answer!r} was accepted"):
+                    _copier_copy(Path(tmp) / "project", {"gate": answer})
+
+    def test_ci_gate_job_is_the_gate_contract(self) -> None:
+        # ADR 0011, decision 5: the project's CI calls core-checks.yml as a job
+        # of its gate, and the gate job's name is the check the ruleset requires
+        workflow = self.project / CI_WORKFLOW
+        self.assertTrue(workflow.is_file(), f"{CI_WORKFLOW} not rendered")
+        text = workflow.read_text(encoding="utf-8")
+        gate = CONTRACT_ANSWERS["gate"][1]
+        self.assertIn(f"\n  {gate}:\n", text, f"no gate job named {gate}")
+        self.assertRegex(text, r"\n  core-checks:\n    uses: \S*\.github/workflows/core-checks\.yml\n", "core-checks.yml is not called")
+        self.assertRegex(text, rf"\n    needs: \[[^\]]*\bcore-checks\b[^\]]*\]\n", "the gate does not need core-checks")
+        self.assertIn(f"branches: [{CONTRACT_ANSWERS['main_branch'][1]}]", text, "push does not run on the main branch")
+
+    def test_ruleset_requires_the_gate_on_the_default_branch(self) -> None:
+        ruleset_file = self.project / RULESET
+        self.assertTrue(ruleset_file.is_file(), f"{RULESET} not rendered")
+        ruleset = json.loads(ruleset_file.read_text(encoding="utf-8"))
+        self.assertEqual(ruleset["conditions"]["ref_name"]["include"], ["~DEFAULT_BRANCH"])
+        rules = {rule["type"]: rule.get("parameters", {}) for rule in ruleset["rules"]}
+        contexts = [check["context"] for check in rules["required_status_checks"]["required_status_checks"]]
+        self.assertEqual(contexts, [CONTRACT_ANSWERS["gate"][1]])
+        self.assertEqual(rules["pull_request"]["allowed_merge_methods"], ["squash"])
+        self.assertEqual(ruleset["bypass_actors"], [], "the ruleset lets someone bypass it")
+
+    def test_dependabot_updates_actions_after_a_cooldown(self) -> None:
+        dependabot = self.project / DEPENDABOT
+        self.assertTrue(dependabot.is_file(), f"{DEPENDABOT} not rendered")
+        text = dependabot.read_text(encoding="utf-8")
+        self.assertRegex(text, r"package-ecosystem: ['\"]github-actions['\"]")
+        days = [int(value) for value in re.findall(r"default-days: (\d+)", text)]
+        self.assertTrue(days, "no cooldown set")
+        self.assertTrue(all(value >= MIN_COOLDOWN_DAYS for value in days), f"cooldown under {MIN_COOLDOWN_DAYS} days: {days}")
+
+    def test_mission_issue_form_asks_for_acceptance_criteria(self) -> None:
+        # Issue forms must begin with name, description and body (GitHub
+        # Docs, "Syntax for issue forms")
+        form = self.project / MISSION_FORM
+        self.assertTrue(form.is_file(), f"{MISSION_FORM} not rendered")
+        keys = [line.split(":")[0] for line in form.read_text(encoding="utf-8").splitlines() if re.match(r"[a-z]+:", line)]
+        self.assertEqual(keys[:3], ["name", "description", "body"])
+        self.assertIn("label: Acceptance criteria", form.read_text(encoding="utf-8"))
+
+    def test_pr_template_has_the_mission_record_sections(self) -> None:
+        template = self.project / PR_TEMPLATE
+        self.assertTrue(template.is_file(), f"{PR_TEMPLATE} not rendered")
+        lines = template.read_text(encoding="utf-8").splitlines()
+        self.assertIn("Closes #", lines, "no closing keyword for the issue")
+        headings = [line[3:] for line in lines if line.startswith("## ")]
+        self.assertEqual(headings, list(PR_RECORD_SECTIONS))
+        for name in REVIEWER_LISTS:
+            with self.subTest(list=name):
+                self.assertTrue(any(line.startswith(f"- **{name}:**") for line in lines), f"no {name} list")
 
     def test_core_names_no_stack(self) -> None:
         pattern = re.compile(r"\b(" + "|".join(map(re.escape, STACK_TERMS)) + r")\b", re.IGNORECASE)
@@ -350,8 +438,9 @@ class GeneratedProjectTest(unittest.TestCase):
     def test_template_files_stay_out_of_the_project(self) -> None:
         # _subdirectory keeps the template repository's own files (plugin,
         # docs, CI) out of every generated project. The project gets the
-        # core's .github files (core-checks.yml and its script), not these
-        template_own = (".github/workflows/ci.yml", ".github/scripts/validate_plugins.py", ".github/tools", ".github/rulesets")
+        # core's .github files (its own ci.yml, ruleset, core-checks.yml and
+        # its script), not these
+        template_own = (".github/scripts/validate_plugins.py", ".github/tools")
         for name in ("copier.yml", "plugins", "docs/INVENTORY.md", "docs/adr/0001-use-copier.md", *template_own):
             self.assertFalse((self.project / name).exists(), f"{name} leaked into the generated project")
 

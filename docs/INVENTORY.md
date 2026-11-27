@@ -158,7 +158,7 @@ Comparison of 2026-11-17 between kit, UAT, nextjs and this repository (**tpl**).
 | Ruleset | "Protect master" (`ci-passed` + `pip-audit`) | "Protect main" (`ci-passed`) | Tie; the core uses `main` | C | This repo: Mission D (#28), as code in `.github/rulesets/` · generated project: 4 |
 | `priority: P0/P1/P2` labels | Same | Same | Tie | C | This repo: 0 · generated project: 4 |
 | Repository config (squash only, auto-merge, PR title/body) | Auto-merge off | Configured | kit | C | This repo: 0 · generated project: 4 |
-| Issue and PR templates | Missing | Missing | Gap | C | 4 |
+| Issue and PR templates | Mission and Bug issue forms and a PR template (uat#148, 2026-11-12) | Missing | UAT; the core takes the Mission form and a PR template with the mission record ([ADR 0012](adr/0012-github-files-rendered-by-the-core.md)) | C | 4 |
 | `.gitattributes` | `* text=auto` (rejected `eol=lf`) | `* text=auto eol=lf` (Prettier requires LF) | They diverge (see §8) | C | 2a |
 | Published report | Allure on Pages + Codecov via OIDC | Planned (kit Mission 6) | UAT | P | 5 / 6 |
 | Selenium Grid in `compose.yaml` by digest, same source locally and in CI | Yes (*dev/prod parity*) | — | UAT | P | 6 |

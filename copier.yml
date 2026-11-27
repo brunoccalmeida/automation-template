@@ -23,10 +23,15 @@ _skip_if_exists:
   - docs/PROJECT_SESSION_SUMMARY.md
   - docs/KNOWN_ISSUES.md
   - docs/adr/README.md
+  # The project adds its own jobs to the gate's needs and its own ecosystems
+  # to Dependabot, which reads a single file (ADR 0012)
+  - .github/workflows/ci.yml
+  - .github/dependabot.yml
 
 # The contracts of core.md (ADR 0003), rendered into the contracts table of
-# the generated CLAUDE.md. A pack answers them with its own commands; left
-# empty, the table reads "Not set" and the mission plugin stops and asks.
+# the generated CLAUDE.md. A pack answers the commands; left empty, the table
+# reads "Not set" and the mission plugin stops and asks. The branch and the
+# gate are not empty: the core's own CI and ruleset use them (ADR 0012).
 cmd_check:
   type: str
   help: "`check` contract: the command for the static checks (lint, types, formatting); empty if none yet"
@@ -45,9 +50,15 @@ cmd_smoke:
 main_branch:
   type: str
   help: "`main-branch` contract: the branch pull requests merge into"
-  default: ""
+  default: main
+  validator: "{% if not main_branch.strip() %}The main branch cannot be empty{% endif %}"
 
 gate:
   type: str
-  help: "`gate` contract: the single CI check the branch ruleset requires; empty if none yet"
-  default: ""
+  help: "`gate` contract: the single CI check the branch ruleset requires, the name of the gate job in .github/workflows/ci.yml"
+  default: ci-passed
+  # The answer is the gate's job id: "must start with a letter or _ and
+  # contain only alphanumeric characters, -, or _" (GitHub Docs, "Workflow
+  # syntax", jobs.<job_id>)
+  validator: >-
+    {% if not (gate | regex_search('^[A-Za-z_][A-Za-z0-9_-]*$')) %}The gate must be a job id: a letter or _, then letters, digits, - or _{% endif %}
