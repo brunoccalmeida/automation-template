@@ -18,3 +18,4 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0010](0010-claude-code-enforcement-in-the-core.md) | Claude Code enforcement in the core: deny rules and a SessionStart hook | Accepted |
 | [0011](0011-ci-enforcement-as-a-reusable-core-workflow.md) | CI enforcement in the core: a reusable workflow with encoding, secret scan and workflow audit | Accepted |
 | [0012](0012-github-files-rendered-by-the-core.md) | GitHub files rendered by the core: the CI caller, the ruleset, Dependabot and the mission templates | Accepted |
+| [0013](0013-new-project-applies-the-github-settings-with-a-shared-script.md) | `/new-project` applies the GitHub settings with a shared script | Accepted |
