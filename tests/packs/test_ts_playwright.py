@@ -98,6 +98,13 @@ class _SystemUnderTest(http.server.BaseHTTPRequestHandler):
         pass
 
 
+def _serve() -> tuple[http.server.ThreadingHTTPServer, str]:
+    """Start the system under test on a free local port; return it and its URL."""
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _SystemUnderTest)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, f"http://127.0.0.1:{server.server_address[1]}"
+
+
 def setUpModule() -> None:
     """Fail, never skip, when a tool the pack needs is missing."""
     missing = [name for name, path in (("copier", COPIER), ("npm", NPM), ("npx", NPX)) if path is None]
@@ -115,9 +122,7 @@ class PackProjectTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls._tmp = tempfile.TemporaryDirectory()
         cls.project = Path(cls._tmp.name) / "project"
-        cls._server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _SystemUnderTest)
-        threading.Thread(target=cls._server.serve_forever, daemon=True).start()
-        cls.base_url = f"http://127.0.0.1:{cls._server.server_address[1]}"
+        cls._server, cls.base_url = _serve()
         try:
             _generate(cls.project, "[e2e, api]")
             _ok(NPM, "ci", "--no-fund", "--no-audit", cwd=cls.project)
@@ -236,6 +241,9 @@ class SingleTestTypeTest(unittest.TestCase):
     """A project with one test type has only that type's files, and still passes its contracts."""
 
     def test_each_type_alone(self) -> None:
+        server, base_url = _serve()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
         for test_type, other in (("api", "e2e"), ("e2e", "api")):
             with self.subTest(test_type=test_type), tempfile.TemporaryDirectory() as tmp:
                 project = Path(tmp) / "project"
@@ -245,8 +253,11 @@ class SingleTestTypeTest(unittest.TestCase):
                 workflow = (project / CI_WORKFLOW).read_text(encoding="utf-8")
                 self.assertEqual("playwright install" in workflow, test_type == "e2e", "browser install does not follow the e2e option")
                 _ok(NPM, "ci", "--no-fund", "--no-audit", cwd=project)
-                result = _run(NPM, "run", "check", cwd=project, env=_environment())
-                self.assertEqual(result.returncode, 0, f"npm run check failed:\n{result.stdout}\n{result.stderr}")
+                if test_type == "e2e":
+                    _ok(NPX, "playwright", "install", "chromium", cwd=project)
+                for contract in (("run", "check"), ("test",), ("run", "smoke")):
+                    result = _run(NPM, *contract, cwd=project, env=_environment(BASE_URL=base_url))
+                    self.assertEqual(result.returncode, 0, f"npm {' '.join(contract)} failed:\n{result.stdout}\n{result.stderr}")
 
 
 class PackQuestionsTest(unittest.TestCase):
