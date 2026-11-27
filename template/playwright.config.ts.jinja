@@ -19,7 +19,7 @@ export default defineConfig({
   // pays for every line it reads. Anyone else: list, one line per test
   reporter: env.CI
     ? [['github'], ['list'], ['html', { open: 'never' }]]
-    : env.CLAUDE_CODE_CHILD_SESSION
+    : env.CLAUDE_CODE_CHILD_SESSION !== undefined
       ? [['dot']]
       : [['list']],
   use: {

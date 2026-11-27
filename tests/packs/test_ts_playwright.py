@@ -252,6 +252,7 @@ class PackProjectTest(unittest.TestCase):
         # diagnose; failOnFlakyTests turns a flaky run red (playwright.dev,
         # TestConfig, failOnFlakyTests)
         self._with_spec("flaky.spec.ts", FLAKY_SPEC)
+        self.addCleanup(shutil.rmtree, self.project / "playwright-report", True)
         result = self._npm("test", "--", "tests/api/flaky.spec.ts", BASE_URL=self.base_url, CI="true")
         self.assertRegex(result.stdout + result.stderr, r"\b1 flaky\b", "the test was not retried in CI")
         self.assertNotEqual(result.returncode, 0, "a flaky test passed the build")
@@ -268,6 +269,12 @@ class PackProjectTest(unittest.TestCase):
         self.assertNotIn(title, agent.stdout, "an agent still gets one line per test")
         self.assertRegex(agent.stdout, r"\b2 passed\b", "the summary is gone under an agent")
 
+    def test_any_value_of_the_agent_variable_means_an_agent(self) -> None:
+        # Claude Code owns the value (seen: 1); a new one must not stop the run
+        result = self._npm("run", "smoke", BASE_URL=self.base_url, CLAUDE_CODE_CHILD_SESSION="session-42")
+        self.assertEqual(result.returncode, 0, f"an unexpected value stopped the run:\n{result.stdout}\n{result.stderr}")
+        self.assertNotIn("the system under test answers", result.stdout, "an unexpected value is not read as an agent")
+
     def test_a_failure_stays_readable_in_compact_output(self) -> None:
         self._with_spec("untagged.spec.ts", UNTAGGED_FAILING_SPEC)
         result = self._npm("test", "--", "tests/api/untagged.spec.ts", BASE_URL=self.base_url, CLAUDE_CODE_CHILD_SESSION="1")
@@ -277,6 +284,8 @@ class PackProjectTest(unittest.TestCase):
 
     def test_ci_writes_the_html_report(self) -> None:
         report = self.project / "playwright-report"
+        # Another CI run of this class may have left one behind
+        shutil.rmtree(report, ignore_errors=True)
         self.addCleanup(shutil.rmtree, report, True)
         result = self._npm("test", BASE_URL=self.base_url, CI="true")
         self.assertEqual(result.returncode, 0, f"npm test failed in CI:\n{result.stdout}\n{result.stderr}")
