@@ -11,9 +11,17 @@ export default defineConfig({
   // and failOnFlakyTests turns that run red so the flake gets an issue
   retries: env.CI ? 2 : 0,
   failOnFlakyTests: env.CI,
-  // github annotates the failures on the pull request; list keeps them
-  // readable in the log
-  reporter: env.CI ? [['github'], ['list']] : [['list']],
+  // CI: github annotates the failures on the pull request, list keeps them
+  // readable in the log, and html writes the report the workflow uploads.
+  // A command run by a Claude Code tool (CLAUDE_CODE_CHILD_SESSION, set in
+  // the commands its tools spawn: code.claude.com/docs/en/env-vars): dot,
+  // one character per test and only the failures in full, because the agent
+  // pays for every line it reads. Anyone else: list, one line per test
+  reporter: env.CI
+    ? [['github'], ['list'], ['html', { open: 'never' }]]
+    : env.CLAUDE_CODE_CHILD_SESSION !== undefined
+      ? [['dot']]
+      : [['list']],
   use: {
     baseURL: env.BASE_URL,
     // A trace of the retry shows what differed from the failed attempt

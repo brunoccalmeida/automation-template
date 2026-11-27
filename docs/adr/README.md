@@ -20,3 +20,4 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0012](0012-github-files-rendered-by-the-core.md) | GitHub files rendered by the core: the CI caller, the ruleset, Dependabot and the mission templates | Accepted |
 | [0013](0013-new-project-applies-the-github-settings-with-a-shared-script.md) | `/new-project` applies the GitHub settings with a shared script | Accepted |
 | [0014](0014-ts-playwright-pack-walking-skeleton.md) | The `ts-playwright` pack as a walking skeleton chosen by an answer | Accepted |
+| [0015](0015-ts-playwright-pack-hardening.md) | Hardening of the `ts-playwright` pack: OSV audit, ignore sentinel, compact agent output, report as an artifact | Accepted |

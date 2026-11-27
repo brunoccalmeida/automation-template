@@ -14,6 +14,9 @@ if (existsSync(envFile)) {
 const envSchema = z.object({
   BASE_URL: z.url({ protocol: /^https?$/ }),
   CI: z.stringbool().default(false),
+  // Set by Claude Code in the commands its tools run (playwright.config.ts).
+  // Its presence is the signal, not its value (seen: 1), which Claude Code owns
+  CLAUDE_CODE_CHILD_SESSION: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

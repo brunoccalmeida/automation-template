@@ -16,9 +16,11 @@ npm run smoke
 
 | Command | What it runs |
 | --- | --- |
-| `npm run check` | Type check, lint and format check |
+| `npm run check` | Type check, lint, format check and the Dependabot ignore sentinel (`scripts/check-dependency-ignores.ts`) |
 | `npm test` | The whole suite |
 | `npm run smoke` | Only the tests tagged `@smoke` |
 
-In CI, set `BASE_URL` as an Actions variable of the repository.
+In CI, set `BASE_URL` as an Actions variable of the repository. The `audit` job fails on a known vulnerability in `package-lock.json` (exceptions and their policy: [`osv-scanner.toml`](osv-scanner.toml)), and each run keeps its HTML report as the `playwright-report` artifact.
+
+A command run by a Claude Code tool gets the `dot` reporter (one character per test, failures in full); a terminal gets `list`.
 {%- endif %}
