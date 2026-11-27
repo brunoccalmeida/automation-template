@@ -76,7 +76,7 @@ MIN_COOLDOWN_DAYS = 7
 # The parts of the mission record that close-mission writes in the PR body
 # (plugins/mission/skills/close-mission/SKILL.md, step 6)
 PR_RECORD_SECTIONS = ("Decisions", "Sources", "How the RED was seen", "Reviewer findings")
-REVIEWER_LISTS = ("Fixed", "False positives", "False negatives")
+REVIEWER_LISTS = ("Self-check", "Fixed", "False positives", "False negatives")
 # Tools, languages and stack-specific settings the core must not name (ADR
 # 0003: "The core never names a stack, a tool or a target type"). Whole
 # words, any case. Words that are also plain English (Behave) stay out, or
