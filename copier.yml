@@ -27,6 +27,66 @@ _skip_if_exists:
   # to Dependabot, which reads a single file (ADR 0012)
   - .github/workflows/ci.yml
   - .github/dependabot.yml
+  # A pack is a walking skeleton (ADR 0002): the project grows every one of
+  # its files (dependencies, variables, projects, rules, the smoke itself,
+  # which ADR 0003 expects to be replaced), so the pack renders them once
+  - package.json
+  - package-lock.json
+  - .node-version
+  - .gitignore
+  - .prettierrc.json
+  - .prettierignore
+  - .env.example
+  - tsconfig.json
+  - eslint.config.mjs
+  - playwright.config.ts
+  - "src/**"
+  - "tests/**"
+
+# Each pack's files, left out of a project that did not choose it, and each
+# test type's files, left out when the type is not chosen. Patterns are
+# rendered with Jinja (Copier docs, "Configuring a template", exclude) and
+# matched against the rendered path, without the .jinja suffix (Copier 9.19.1
+# source, _main.py: match_exclude(dst_relpath)). With _subdirectory set,
+# Copier's default exclude list is empty, so nothing is lost
+_exclude:
+  - "{% if pack != 'ts-playwright' %}package.json{% endif %}"
+  - "{% if pack != 'ts-playwright' %}package-lock.json{% endif %}"
+  - "{% if pack != 'ts-playwright' %}.node-version{% endif %}"
+  - "{% if pack != 'ts-playwright' %}.gitignore{% endif %}"
+  - "{% if pack != 'ts-playwright' %}.prettierrc.json{% endif %}"
+  - "{% if pack != 'ts-playwright' %}.prettierignore{% endif %}"
+  - "{% if pack != 'ts-playwright' %}.env.example{% endif %}"
+  - "{% if pack != 'ts-playwright' %}tsconfig.json{% endif %}"
+  - "{% if pack != 'ts-playwright' %}eslint.config.mjs{% endif %}"
+  - "{% if pack != 'ts-playwright' %}playwright.config.ts{% endif %}"
+  - "{% if pack != 'ts-playwright' %}src{% endif %}"
+  - "{% if pack != 'ts-playwright' %}tests{% endif %}"
+  - "{% if 'api' not in (test_types or []) %}tests/api{% endif %}"
+  - "{% if 'e2e' not in (test_types or []) %}tests/e2e{% endif %}"
+
+# A pack implements the core's contracts for one tool chain (ADR 0002); none
+# renders the core alone
+pack:
+  type: str
+  help: The pack for the project's tool chain; none renders the core alone
+  choices:
+    none: none
+    ts-playwright: ts-playwright
+  default: none
+
+# Test types are options inside a pack, not packs (ADR 0002). The answer is a
+# list (Copier docs, "Configuring a template", multiselect)
+test_types:
+  type: str
+  help: The test types the project starts with
+  when: "{{ pack == 'ts-playwright' }}"
+  multiselect: true
+  choices:
+    e2e: e2e
+    api: api
+  default: "[e2e, api]"
+  validator: "{% if not test_types %}Choose at least one test type{% endif %}"
 
 # The contracts of core.md (ADR 0003), rendered into the contracts table of
 # the generated CLAUDE.md. A pack answers the commands; left empty, the table
@@ -35,17 +95,17 @@ _skip_if_exists:
 cmd_check:
   type: str
   help: "`check` contract: the command for the static checks (lint, types, formatting); empty if none yet"
-  default: ""
+  default: "{% if pack == 'ts-playwright' %}npm run check{% endif %}"
 
 cmd_test:
   type: str
   help: "`test` contract: the command that runs the test suite; empty if none yet"
-  default: ""
+  default: "{% if pack == 'ts-playwright' %}npm test{% endif %}"
 
 cmd_smoke:
   type: str
   help: "`smoke` contract: the fastest end-to-end proof that the project runs; empty if none yet"
-  default: ""
+  default: "{% if pack == 'ts-playwright' %}npm run smoke{% endif %}"
 
 main_branch:
   type: str

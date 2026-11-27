@@ -1,0 +1,10 @@
+package-lock.json
+
+# Rendered by the template's core: left as the template wrote them, so that
+# copier update applies its changes without conflicts
+.claude/
+.github/
+docs/
+.copier-answers.yml
+CLAUDE.md
+README.md

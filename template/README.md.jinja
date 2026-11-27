@@ -1,1 +1,24 @@
 # {{ project_name }}
+{%- if pack == 'ts-playwright' %}
+
+## Getting started
+
+Node is the version in [`.node-version`](.node-version).
+
+```sh
+npm ci
+{%- if 'e2e' in test_types %}
+npx playwright install chromium
+{%- endif %}
+cp .env.example .env    # then set BASE_URL to the system under test
+npm run smoke
+```
+
+| Command | What it runs |
+| --- | --- |
+| `npm run check` | Type check, lint and format check |
+| `npm test` | The whole suite |
+| `npm run smoke` | Only the tests tagged `@smoke` |
+
+In CI, set `BASE_URL` as an Actions variable of the repository.
+{%- endif %}
