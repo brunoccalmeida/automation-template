@@ -57,4 +57,8 @@ gate:
   type: str
   help: "`gate` contract: the single CI check the branch ruleset requires, the name of the gate job in .github/workflows/ci.yml"
   default: ci-passed
-  validator: "{% if not gate.strip() %}The gate cannot be empty{% endif %}"
+  # The answer is the gate's job id: "must start with a letter or _ and
+  # contain only alphanumeric characters, -, or _" (GitHub Docs, "Workflow
+  # syntax", jobs.<job_id>)
+  validator: >-
+    {% if not (gate | regex_search('^[A-Za-z_][A-Za-z0-9_-]*$')) %}The gate must be a job id: a letter or _, then letters, digits, - or _{% endif %}

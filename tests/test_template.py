@@ -289,6 +289,16 @@ class GeneratedProjectTest(unittest.TestCase):
                 self.assertEqual(values.get(role), expected)
         self.assertIn("\n  ci-passed:\n", workflow, "the default gate job is not ci-passed")
 
+    def test_gate_answer_must_be_a_job_id(self) -> None:
+        # The answer becomes the gate's job id, which "must start with a
+        # letter or _ and contain only alphanumeric characters, -, or _"
+        # (GitHub Docs, "Workflow syntax", jobs.<job_id>); anything else
+        # renders a workflow GitHub rejects, and the required check never runs
+        for answer in ("CI passed", 'ci"passed', "1-gate"):
+            with self.subTest(answer=answer), tempfile.TemporaryDirectory() as tmp:
+                with self.assertRaisesRegex(RuntimeError, "job id", msg=f"gate={answer!r} was accepted"):
+                    _copier_copy(Path(tmp) / "project", {"gate": answer})
+
     def test_ci_gate_job_is_the_gate_contract(self) -> None:
         # ADR 0011, decision 5: the project's CI calls core-checks.yml as a job
         # of its gate, and the gate job's name is the check the ruleset requires
