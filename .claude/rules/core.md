@@ -119,7 +119,7 @@ reason, and prevention.
   an error with an empty catch or a fallback that hides it. Why: a hidden failure
   surfaces later, far from its cause, while the tests stay green.
 - Code (identifiers, comments, test names) and commit messages are in English; documentation
-  is in the language set by `Documentation language:` in the project's `CLAUDE.md`. Why:
-  English is the one language nearly all programmers can read, so the code stays open to
-  whoever maintains it next; documentation is read by the project's audience, who may read
-  another language.
+  is in the language set by `Documentation language:` in the project's `CLAUDE.md`, English
+  when it sets none. Why: English is the one language nearly all programmers can read, so
+  the code stays open to whoever maintains it next; documentation is read by the project's
+  audience, who may read another language.

@@ -284,7 +284,11 @@ class GeneratedProjectTest(unittest.TestCase):
         # of the documentation depends on who reads it, so each project's
         # CLAUDE.md names it under the key the core points at (#65)
         key = "Documentation language:"
-        self.assertTrue(f"`{key}`" in (TEMPLATE_ROOT / CORE_RULES).read_text(encoding="utf-8"), f"core.md does not point at `{key}` in CLAUDE.md")
+        core = " ".join((TEMPLATE_ROOT / CORE_RULES).read_text(encoding="utf-8").split())
+        self.assertTrue(f"`{key}`" in core, f"core.md does not point at `{key}` in CLAUDE.md")
+        # CLAUDE.md is rendered once, so a project updated from an older tag
+        # gets the new core.md without the line: the core gives the default
+        self.assertTrue(f"`{key}` in the project's `CLAUDE.md`, English when it sets none" in core, "core.md gives no default documentation language")
         for claude_md in (self.project / "CLAUDE.md", TEMPLATE_ROOT / "CLAUDE.md"):
             with self.subTest(path=claude_md):
                 self.assertTrue(re.search(rf"(?m)^{key} \S", claude_md.read_text(encoding="utf-8")), f"{claude_md} has no `{key} <language>` line")
