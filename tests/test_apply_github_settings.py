@@ -152,6 +152,7 @@ class ApplyGithubSettingsTest(unittest.TestCase):
         self.assertEqual(len(lookups), 1, f"expected one ruleset lookup: {self._calls()}")
         self.assertIn(f'"{RULESET_NAME}"', self._option(lookups[0], "--jq"))
         self.assertIn("--paginate", lookups[0], "a repository with more rulesets than one page would get a duplicate")
+        self.assertIn("includes_parents=false", lookups[0][1], "an organization ruleset with the same name would be taken for the repository's")
 
     def test_fails_when_two_rulesets_share_its_name(self) -> None:
         result = self._run(ruleset_ids="1\n2")
