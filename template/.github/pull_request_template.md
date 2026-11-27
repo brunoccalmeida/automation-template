@@ -18,8 +18,11 @@ Closes #
 
 ## Reviewer findings
 
-<!-- Each list says "none" when empty. -->
+<!-- Each list says "none" when empty. Each self-check catch and each fixed
+     finding ends with "class: <class>; action: <guard | issue | none: why>"
+     (mission plugin, close-mission). -->
 
+- **Self-check:** none
 - **Fixed:** none
 - **False positives:** none
 - **False negatives:** none
