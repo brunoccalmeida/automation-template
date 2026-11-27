@@ -21,3 +21,33 @@ updates:
       # Low risk and reviewed together: one PR for all actions
       github-actions:
         patterns: ["*"]
+
+  # The pinned CI tools (.github/tools/; tests/test_ci_tools.py requires an
+  # entry for each one). Copier's requirements.txt is compiled by uv with
+  # hashes: the uv ecosystem reruns `uv pip compile` with the options it reads
+  # from that file (--generate-hashes, --universal, --python-version) and
+  # bumps requirements.in too (ADR 0016)
+  - package-ecosystem: "uv"
+    directory: "/.github/tools/copier"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Dependabot does not touch allowScripts, which approves the CLI's
+  # postinstall for one reviewed version: its pull request fails
+  # tests/test_ci_tools.py until the new version is reviewed and approved
+  # (the test's message has the command)
+  - package-ecosystem: "npm"
+    directory: "/.github/tools/claude-cli"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: "increase"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "ci"
+      include: "scope"
