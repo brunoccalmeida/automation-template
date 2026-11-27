@@ -2,8 +2,8 @@
 
 The squash merge writes the PR title and body to the main branch as the
 commit message, and GitHub closes every issue that a closing keyword
-followed by a reference names in it, code spans included: a commit message
-is plain text (issue #94). The script reads that message and fails when a
+followed by a reference names in it, in plain prose too, negated or not
+(issue #94). The script reads that message and fails when a
 closing keyword names an issue the message does not declare it closes on a
 line of its own (``Closes #N``), the first line of the PR template.
 
@@ -65,7 +65,7 @@ class CheckClosingKeywordsTest(unittest.TestCase):
         run = self.run_script(FIXTURES / "pr-93-squash.txt")
 
         # Line 9 says "does not close #91"; line 11 ends in "`Closes" and the
-        # reference opens line 12: GitHub matched across the line break
+        # reference opens line 12, a form the check rejects too
         self.assert_rejected(run, "line 9: ", "line 11: ", "brunoccalmeida/automation-template#91")
 
     def test_rejects_the_pr_83_message_on_every_stray_line(self) -> None:

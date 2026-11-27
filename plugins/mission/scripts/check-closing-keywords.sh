@@ -7,13 +7,15 @@
 # title, a blank line and the PR body.
 #
 # GitHub closes the issue named after a closing keyword in a commit message
-# on the default branch. A commit message is plain text, so backticks do not
-# protect a quoted keyword, and a line break between the keyword and the
-# reference does not stop the match: both closed issues by mistake here
-# (#82 from the squash of #83, #91 from the squash of #93). The issues the PR
-# closes are the ones on a line that holds only keywords and references, as
-# the first line of the PR template does (`Closes #N`); every other closing
-# keyword must name one of them.
+# on the default branch, prose included: a negated "does not close #91" and
+# "Close #82 by hand" were in the squashes of #93 and #83, which closed both
+# issues by mistake. The documentation does not say whether backticks or a
+# line break between the keyword and the reference stop the match, and those
+# squashes do not isolate it (each also held the quoted, or split, form), so
+# the check matches them too. The issues the PR closes are the ones on a line
+# that holds only keywords and references, as the first line of the PR
+# template does (`Closes #N`); every other closing keyword must name one of
+# them.
 #
 # Exit 0: no stray keyword. Exit 1: one or more, each named with its line on
 # stderr. Exit 2: unusable input. POSIX sh and awk only, because the plugin
