@@ -119,6 +119,8 @@ Comparison of 2026-11-17 between kit, UAT, nextjs and this repository (**tpl**).
 
 **Reviewer answer key (#38, 2026-11-22).** New pieces, with no version in the source projects; the evidence is an observed gap and the golden rule. The bodies of the merged PRs record the reviewer's findings, almost all applied, and no defect it let through; the reviewer is a gate and had never been seen rejecting anything. The capture (false positives and negatives in three lists in the PR body, `reviewer-miss` label) applies to every project that uses the plugin; the `evals/review/` suite reuses merged missions of this repository. Building it exposed another gap: the reviewer received only the `git diff`, without the commit messages, and has no `git`, so it could never check the RED record; `close-mission` now hands the messages over too.
 
+**Closing keyword check (#94, 2026-11-27).** A new piece, with no version in the source projects; the evidence is two observed defects of the same class. With `PR_BODY` as the squash message, the records of [#83](https://github.com/brunoccalmeida/automation-template/pull/83) and [#93](https://github.com/brunoccalmeida/automation-template/pull/93), both declaring `Refs`, closed [#82](https://github.com/brunoccalmeida/automation-template/issues/82) and [#91](https://github.com/brunoccalmeida/automation-template/issues/91) through closing keywords in their prose, and both issues had to be reopened by hand. The error is mechanical and has no exception (a keyword next to an issue the PR does not close is always wrong), so it became a script on its second occurrence instead of a rule; `close-mission` and `ship-pr` run it.
+
 ## 3. Configuration and tests of the harness itself
 
 | Piece | UAT | kit | Better | Cat. | Phase |

@@ -1,0 +1,76 @@
+docs(summary): record the v1.0.1 release (#91) (#93)
+
+Refs #91
+
+<!-- The body is the mission record: the squash writes it to the main
+branch
+     (mission plugin, close-mission). -->
+
+This PR does not close #91: its other two criteria (`copier update` in
+the kit and the hand fix of the kit's project-owned copies) run in a
+mission of the kit's repository, whose PR closes it with `Closes
+brunoccalmeida/automation-template#91`, as the issue's notes say.
+
+## Decisions
+
+- **v1.0.1, a patch.** Since v1.0.0, `main` has only two fixes (#89,
+full-URL references in rendered files; #65, the language rule) and their
+tests; `copier.yml` is unchanged, so no question or contract changed and
+an update needs no new answers.
+- **Released from `84179d1`, the merge of #89.** Annotated tag `v1.0.1`,
+as v1.0.0 was, and the [GitHub
+release](https://github.com/brunoccalmeida/automation-template/releases/tag/v1.0.1).
+Its notes name both fixes and say which project-owned files `copier
+update` leaves alone (`ci.yml`, `dependabot.yml`, the smoke specs) and
+that the `Documentation language:` line can be added to an existing
+`CLAUDE.md`.
+- **Proof from GitHub, with no repository created.** Copier 9.19.1,
+`copier copy --defaults --data project_name=v101-proof --data
+pack=ts-playwright gh:brunoccalmeida/automation-template gen` with no
+`--vcs-ref`: `.copier-answers.yml` recorded `_commit: v1.0.1`; a search
+of the rendered files for a bare `#N` or `ADR NNNN` outside a URL found
+none, `ci.yml` cites the ADRs by full URL, and `CLAUDE.md` has
+`Documentation language: English`. No CI run of a generated project,
+unlike v1.0.0: the two fixes change comments, documentation and one
+rule, which `test` already renders and checks.
+- **Summary:** the Situation row records the release; "Pending in the
+kit" now names v1.0.1, the `Documentation language:` line and the three
+project-owned files; the Release row of the plan links v1.0.1. The next
+mission is unchanged: #62, then #86 from Sunday 2026-11-29 14:15 UTC.
+
+## Sources
+
+- Copier, [Generating a
+project](https://copier.readthedocs.io/en/stable/generating/): "By
+default, Copier will copy from the last release found in template Git
+tags, sorted as PEP 440"; [Updating a
+project](https://copier.readthedocs.io/en/stable/updating/): `copier
+update` "will compare them using PEP 440, and will check out the latest
+one".
+- [PEP 440, "Preceding v character"](https://peps.python.org/pep-0440/):
+"The same version with and without the `v` is considered equivalent", so
+`v1.0.1` sorts after `v1.0.0`. Matched by the proof above.
+- [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html), item
+6: "Patch version Z (x.y.Z | x > 0) MUST be incremented if only backward
+compatible bug fixes are introduced." Applying it to a template (no
+question changed = compatible) is judgment.
+
+## How the RED was seen
+
+Does not apply: the diff changes only the session summary, and the
+release is a GitHub operation proved by generating a project from the
+published tag (above). Gates on the branch: `check` OK; `test` 66 OK (1
+skipped on Windows, pre-existing); `tests/packs` 25 OK.
+
+## Reviewer findings
+
+- **Fixed:** none
+- **False positives:** `README.md:65` keeps `--vcs-ref v1.0.0` as the
+pinning example. Dismissed: it shows the flag's syntax, and whoever pins
+picks the tag on purpose; bumping it every release is churn with no gain
+for the reader, and the README at the v1.0.1 tag cannot change anyway.
+- **False negatives:** none
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
