@@ -16,14 +16,15 @@ Facts that shaped the decision (read 2026-11-26):
 ## Decision
 
 1. **Copier gets a `uv` entry** for `/.github/tools/copier`, weekly, with the core's 7-day cooldown.
-2. **The CLI gets an `npm` entry** for `/.github/tools/claude-cli`, with the same cooldown, and `allowScripts` stays pinned to one version. `tests/test_ci_tools.py` fails while the `allowScripts` entry differs from the locked version, so Dependabot's pull request stays red until someone reviews the new version's `postinstall` and approves it; the test's message has the command.
+2. **The CLI gets an `npm` entry** for `/.github/tools/claude-cli`, with the same cooldown, and `allowScripts` stays pinned to one version. `tests/test_ci_tools.py` fails while the `allowScripts` entry differs from the locked version, so Dependabot's pull request stays red until someone reviews the new version's `postinstall` and approves it; the test's message has the command. The guard blocks the merge, not the execution: with npm 11, CI's `npm ci` runs the new version's `postinstall` on that pull request anyway; npm 12 will skip it until the entry matches, and `claude --version` will fail the `validate-plugins` job too.
 3. **A pinned tool needs an entry.** The same test fails for a directory under `.github/tools/` with no Dependabot entry.
 4. **The rest stays manual**, bumped with the change that needs it: the pack's lockfile and the template's action pins, osv-scanner included (Dependabot does not read `.jinja` files, and the generated project's own Dependabot bumps them after generation, [ADR 0012](0012-github-files-rendered-by-the-core.md)); the osv-scanner binary, gitleaks and zizmor's `version` (version strings in a test or a workflow, which no ecosystem reads); and the `.node-version` files.
 
 ## Alternatives
 
 - **The `pip` ecosystem for Copier:** it also regenerates hashes, but it compiles with pip-tools, while the file's header and ADR 0007 name `uv pip compile`.
-- **A name-only `allowScripts` entry (`"@anthropic-ai/claude-code": true`):** Dependabot's pull request would go green on its own, but a new version's `postinstall` would run in CI unreviewed, which the pinned entry exists to prevent (#18).
+- **A name-only `allowScripts` entry (`"@anthropic-ai/claude-code": true`):** Dependabot's pull request would go green on its own and merge with no one having read the new version's `postinstall`; the pinned entry exists to tie each approval to a reviewed version (#18). On the pull request's own CI both behave the same while npm stays on 11.x: the script runs.
+- **`npm ci --ignore-scripts` in CI until the entry matches:** it would keep an unreviewed `postinstall` from running on the pull request, but the CLI needs that script to install its native binary, so the job would fail either way; left out until npm 12, which skips the script by itself.
 - **The CLI stays manual:** no red pull request to finish by hand, but the pin falls behind until someone remembers it.
 - **A test that keeps the template's action pins equal to the root workflows', which Dependabot bumps:** it would catch drift for the actions both use; left out because nothing has drifted yet and the generated project bumps its own copies.
 
