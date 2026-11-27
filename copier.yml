@@ -5,7 +5,7 @@
 # repository (the mission plugin, docs, CI) belongs to the template itself
 _subdirectory: template
 
-# The version the template is tested with (.github/tools/copier/)
+# The version the template is tested with (tools/copier/)
 _min_copier_version: "9.19.1"
 
 project_name:

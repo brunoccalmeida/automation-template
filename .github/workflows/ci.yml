@@ -34,12 +34,12 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version-file: .github/tools/claude-cli/.node-version
+          node-version-file: tools/claude-cli/.node-version
 
       # ci, not install: the lockfile pins the CLI and its platform binary
       # by integrity hash, and a lockfile out of sync fails the step
       - name: Install the pinned Claude Code CLI
-        run: npm ci --prefix .github/tools/claude-cli
+        run: npm ci --prefix tools/claude-cli
 
       # --strict minus one exception: any error or warning fails, except the
       # missing `version` the plugins omit on purpose (ADR 0004). The script
@@ -48,7 +48,7 @@ jobs:
       # only, on the runner's python3.
       - name: Validate the marketplace and every plugin
         run: |
-          .github/tools/claude-cli/node_modules/.bin/claude --version
+          tools/claude-cli/node_modules/.bin/claude --version
           python3 .github/scripts/validate_plugins.py
 
   # The `test` contract. Hooks: each test runs the command the plugin's
@@ -75,7 +75,7 @@ jobs:
       - name: Install the pinned Copier
         run: |
           python3 -m venv "$RUNNER_TEMP/copier"
-          "$RUNNER_TEMP/copier/bin/pip" install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt
+          "$RUNNER_TEMP/copier/bin/pip" install --require-hashes --only-binary :all: -r tools/copier/requirements.txt
           echo "$RUNNER_TEMP/copier/bin" >> "$GITHUB_PATH"
 
       - name: Test the plugin hooks and the template
@@ -108,7 +108,7 @@ jobs:
       - name: Install the pinned Copier
         run: |
           python3 -m venv "$RUNNER_TEMP/copier"
-          "$RUNNER_TEMP/copier/bin/pip" install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt
+          "$RUNNER_TEMP/copier/bin/pip" install --require-hashes --only-binary :all: -r tools/copier/requirements.txt
           echo "$RUNNER_TEMP/copier/bin" >> "$GITHUB_PATH"
 
       - name: Test the ts-playwright pack

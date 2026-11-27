@@ -1,6 +1,6 @@
 # 7. Test the template by generating the core, with a hash-locked Copier
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0017](0017-pinned-ci-tools-outside-dot-github.md) (the requirements file moves to `tools/copier/`)
 - **Date:** 2026-11-25
 
 ## Context
@@ -21,7 +21,7 @@ Facts behind the decision, from Copier's documentation for 9.19.1:
 2. **The template lives in [`template/`](../../template/)** (`_subdirectory`), so the plugin, docs and CI of this repository never reach a generated project.
 3. **The template renders the answers file from its first version,** because `copier update` is the reason Copier was chosen (ADR 0001).
 4. **The test is a `unittest` module in `tests/`** that runs `copier copy --vcs-ref=HEAD` into a temporary directory and checks the result. It is part of the `test` contract, so it runs the same way on a developer's machine and in CI, and it needs no third-party test library.
-5. **Copier is installed from a hash-locked requirements file** ([`.github/tools/copier/`](../../.github/tools/copier/)), generated with `uv pip compile --universal --generate-hashes` and installed with `pip install --require-hashes --only-binary :all:`. This follows the pinned Claude Code CLI in `.github/tools/claude-cli/`: the version and every dependency are fixed by hash.
+5. **Copier is installed from a hash-locked requirements file** ([`.github/tools/copier/`](../../tools/copier/) (now `tools/copier/`, [ADR 0017](0017-pinned-ci-tools-outside-dot-github.md))), generated with `uv pip compile --universal --generate-hashes` and installed with `pip install --require-hashes --only-binary :all:`. This follows the pinned Claude Code CLI in `.github/tools/claude-cli/`: the version and every dependency are fixed by hash.
 
 ## Alternatives
 

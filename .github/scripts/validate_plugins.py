@@ -25,7 +25,7 @@ import sys
 from collections.abc import Iterator
 from pathlib import Path
 
-DEFAULT_CLI = ".github/tools/claude-cli/node_modules/.bin/claude"
+DEFAULT_CLI = "tools/claude-cli/node_modules/.bin/claude"
 PLUGINS_DIR = Path("plugins")
 # A hung CLI would otherwise run until the job's own timeout
 CLI_TIMEOUT_SECONDS = 120

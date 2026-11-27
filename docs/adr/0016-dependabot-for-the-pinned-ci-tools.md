@@ -1,6 +1,6 @@
 # 16. Dependabot for the pinned CI tools
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0017](0017-pinned-ci-tools-outside-dot-github.md) (the tools move from `.github/tools/` to `tools/`)
 - **Date:** 2026-11-26
 
 ## Context

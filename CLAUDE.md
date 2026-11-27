@@ -8,8 +8,8 @@ Values that the core and the [`mission`](plugins/mission/README.md) plugin use i
 
 | Contract | Value |
 | --- | --- |
-| `check` | `npm ci --prefix .github/tools/claude-cli` once, then `python3 .github/scripts/validate_plugins.py` (on Windows, pass the script the absolute path of `.github\tools\claude-cli\node_modules\.bin\claude.cmd`) |
-| `test` | `pip install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt` once, in a virtual environment, then `python3 -m unittest discover -s tests` (tests of the plugin's hooks and of the template; they need `sh`, `git` and `copier` on the `PATH` and fail without them; on Windows, `python` or `py -3`, with Git Bash on the `PATH`) and `python3 -m unittest discover -s tests/packs` (the `ts-playwright` pack, generated and run; it also needs Node and npm, and downloads Chromium on the first run) |
+| `check` | `npm ci --prefix tools/claude-cli` once, then `python3 .github/scripts/validate_plugins.py` (on Windows, pass the script the absolute path of `tools\claude-cli\node_modules\.bin\claude.cmd`) |
+| `test` | `pip install --require-hashes --only-binary :all: -r tools/copier/requirements.txt` once, in a virtual environment, then `python3 -m unittest discover -s tests` (tests of the plugin's hooks and of the template; they need `sh`, `git` and `copier` on the `PATH` and fail without them; on Windows, `python` or `py -3`, with Git Bash on the `PATH`) and `python3 -m unittest discover -s tests/packs` (the `ts-playwright` pack, generated and run; it also needs Node and npm, and downloads Chromium on the first run) |
 | `smoke` | None: the template has no stack of its own to run |
 | `main-branch` | `main` |
 | `gate` | `ci-passed` |
