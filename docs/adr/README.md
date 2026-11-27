@@ -12,7 +12,7 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0004](0004-partial-resumption-with-a-plugin.md) | Partial resumption: distribute the shared harness as a Claude Code plugin | Accepted; partly superseded by 0006 |
 | [0005](0005-keep-seen-failing-as-the-core-testing-principle.md) | Keep "every test was seen failing" as the core's only testing principle | Accepted |
 | [0006](0006-resume-copier-for-the-core-and-the-ts-pack.md) | Resume Copier for the core and the `ts-playwright` pack | Accepted |
-| [0007](0007-test-the-template-by-generating-the-core.md) | Test the template by generating the core, with a hash-locked Copier | Accepted |
+| [0007](0007-test-the-template-by-generating-the-core.md) | Test the template by generating the core, with a hash-locked Copier | Accepted; partly superseded by 0017 |
 | [0008](0008-core-rules-and-documents-in-the-generated-project.md) | Core rules and documents in the generated project: ownership, line endings and retries | Accepted |
 | [0009](0009-contracts-as-copier-answers-and-a-shared-harness.md) | Contracts as Copier answers, the marketplace in the core, and this repository on its own core | Accepted; partly superseded by 0012 |
 | [0010](0010-claude-code-enforcement-in-the-core.md) | Claude Code enforcement in the core: deny rules and a SessionStart hook | Accepted |
@@ -21,4 +21,5 @@ An accepted record is never rewritten. A decision that changes gets a new record
 | [0013](0013-new-project-applies-the-github-settings-with-a-shared-script.md) | `/new-project` applies the GitHub settings with a shared script | Accepted |
 | [0014](0014-ts-playwright-pack-walking-skeleton.md) | The `ts-playwright` pack as a walking skeleton chosen by an answer | Accepted |
 | [0015](0015-ts-playwright-pack-hardening.md) | Hardening of the `ts-playwright` pack: OSV audit, ignore sentinel, compact agent output, report as an artifact | Accepted |
-| [0016](0016-dependabot-for-the-pinned-ci-tools.md) | Dependabot for the pinned CI tools: `uv` for Copier, `npm` for the CLI with a test on `allowScripts`, the `.jinja` pins stay manual | Accepted |
+| [0016](0016-dependabot-for-the-pinned-ci-tools.md) | Dependabot for the pinned CI tools: `uv` for Copier, `npm` for the CLI with a test on `allowScripts`, the `.jinja` pins stay manual | Accepted; partly superseded by 0017 |
+| [0017](0017-pinned-ci-tools-outside-dot-github.md) | The pinned CI tools live outside `.github/`, where Dependabot cannot open pull requests for them | Accepted |

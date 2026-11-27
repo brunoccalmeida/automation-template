@@ -1,6 +1,6 @@
 # 7. Test the template by generating the core, with a hash-locked Copier
 
-- **Status:** Accepted
+- **Status:** Accepted; partly superseded by [ADR 0017](0017-pinned-ci-tools-outside-dot-github.md) (the requirements file moves to `tools/copier/`)
 - **Date:** 2026-11-25
 
 ## Context

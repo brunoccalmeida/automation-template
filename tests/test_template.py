@@ -184,7 +184,7 @@ def setUpModule() -> None:
     if COPIER is None:
         raise RuntimeError(
             "copier not found on PATH; install it in a virtual environment with "
-            "pip install --require-hashes --only-binary :all: -r .github/tools/copier/requirements.txt"
+            "pip install --require-hashes --only-binary :all: -r tools/copier/requirements.txt"
         )
 
 
@@ -461,7 +461,7 @@ class GeneratedProjectTest(unittest.TestCase):
         # docs, CI) out of every generated project. The project gets the
         # core's .github files (its own ci.yml, ruleset, core-checks.yml and
         # its script), not these
-        template_own = (".github/scripts/validate_plugins.py", ".github/tools")
+        template_own = (".github/scripts/validate_plugins.py", "tools")
         for name in ("copier.yml", "plugins", "docs/INVENTORY.md", "docs/adr/0001-use-copier.md", *template_own):
             self.assertFalse((self.project / name).exists(), f"{name} leaked into the generated project")
 

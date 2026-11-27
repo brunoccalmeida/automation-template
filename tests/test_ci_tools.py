@@ -1,4 +1,4 @@
-"""Tests for the CI tools pinned in .github/tools/ and bumped by Dependabot (#75).
+"""Tests for the CI tools pinned in tools/ and bumped by Dependabot (#75).
 
 Each tool directory gets a Dependabot entry (.github/dependabot.yml), so a pin
 does not drift behind its security fixes. Dependabot bumps the Claude Code CLI
@@ -20,7 +20,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-TOOLS = ROOT / ".github" / "tools"
+TOOLS = ROOT / "tools"
 CLAUDE_CLI = TOOLS / "claude-cli"
 CLAUDE_PACKAGE = "@anthropic-ai/claude-code"
 DEPENDABOT = ROOT / ".github" / "dependabot.yml"
@@ -36,7 +36,7 @@ class ClaudeCliTest(unittest.TestCase):
             approved,
             [f"{CLAUDE_PACKAGE}@{locked}"],
             f"allowScripts does not approve the locked {CLAUDE_PACKAGE}@{locked}: review the new version's "
-            f"postinstall, then run `npm install-scripts approve {CLAUDE_PACKAGE}` in .github/tools/claude-cli "
+            f"postinstall, then run `npm install-scripts approve {CLAUDE_PACKAGE}` in tools/claude-cli "
             "and delete the old entry",
         )
 
@@ -48,10 +48,29 @@ class DependabotTest(unittest.TestCase):
         for tool in sorted(path for path in TOOLS.iterdir() if path.is_dir()):
             with self.subTest(tool=tool.name):
                 self.assertIn(
-                    f"/.github/tools/{tool.name}",
+                    f"/tools/{tool.name}",
                     covered,
-                    f".github/dependabot.yml has no entry for .github/tools/{tool.name}: add one with the "
+                    f".github/dependabot.yml has no entry for tools/{tool.name}: add one with the "
                     "7-day cooldown, or record in an ADR why the tool stays manual",
+                )
+
+    def test_no_entry_outside_github_actions_points_under_dot_github(self):
+        # GitHub refuses Dependabot pull requests that change another
+        # ecosystem's files under .github/ ("The request contains invalid or
+        # unauthorized changes", #82)
+        config = DEPENDABOT.read_text(encoding="utf-8")
+        entries = re.findall(
+            r'package-ecosystem:\s*"([^"]+)"\s*\n\s*directory:\s*"([^"]*)"', config
+        )
+        self.assertTrue(entries, "no Dependabot entry parsed from .github/dependabot.yml")
+        for ecosystem, directory in entries:
+            if ecosystem == "github-actions":
+                continue
+            with self.subTest(ecosystem=ecosystem, directory=directory):
+                self.assertFalse(
+                    directory.startswith("/.github"),
+                    f"the {ecosystem} entry points at {directory}: GitHub refuses Dependabot's pull request "
+                    "for files under .github/ outside github-actions (#82); keep the manifest outside .github/",
                 )
 
 

@@ -9,5 +9,5 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# CI tooling installed with npm ci (.github/tools/)
+# CI tooling installed with npm ci (tools/)
 node_modules/
