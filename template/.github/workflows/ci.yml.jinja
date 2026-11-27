@@ -1,8 +1,10 @@
 name: CI
 
 # Project-owned: rendered once by the template, then the project adds its own
-# jobs here and to the needs of the gate (ADR 0012). The core's checks come
-# from core-checks.yml, which the template updates (ADR 0011).
+# jobs here and to the needs of the gate
+# (https://github.com/brunoccalmeida/automation-template/blob/main/docs/adr/0012-github-files-rendered-by-the-core.md).
+# The core's checks come from core-checks.yml, which the template updates
+# (https://github.com/brunoccalmeida/automation-template/blob/main/docs/adr/0011-ci-enforcement-as-a-reusable-core-workflow.md).
 on:
   pull_request:
   push:

@@ -175,6 +175,20 @@ def _relative_links(markdown: str) -> list[str]:
     return [target for target in targets if not re.match(r"[a-z][a-z0-9+.-]*:|#", target)]
 
 
+def _bare_references(project: Path) -> list[str]:
+    """Issue (#71, uat#26) and ADR (ADR 0003, also wrapped after a comment marker) references outside a URL."""
+    url = re.compile(r"https?://\S+")
+    reference = re.compile(r"(?<!&)[\w-]*#\d+\b|\bADR[\s#/*]*\d+\b")
+    found = []
+    for path in sorted(project.rglob("*")):
+        if path.is_file() and path.name != ".copier-answers.yml":
+            text = url.sub("", path.read_text(encoding="utf-8"))
+            for match in reference.finditer(text):
+                number = text.count("\n", 0, match.start()) + 1
+                found.append(f"{path.relative_to(project).as_posix()}:{number}: {' '.join(match.group().split())}")
+    return found
+
+
 def setUpModule() -> None:
     """Fail, never skip, when Copier is missing.
 
@@ -405,6 +419,17 @@ class GeneratedProjectTest(unittest.TestCase):
                 if (name, target) not in PLACEHOLDER_LINKS and not (document.parent / target.split("#")[0]).exists():
                     broken.append(f"{name} -> {target}")
         self.assertEqual(broken, [], "links to files that do not exist")
+
+    def test_references_to_this_repository_are_full_urls(self) -> None:
+        # In a generated project, "#71" is that project's issue 71 and
+        # "ADR 0003" a file its empty docs/adr/ lacks (#89). The pack's files
+        # count too, so the project is rendered again with the pack
+        with tempfile.TemporaryDirectory() as tmp:
+            with_pack = Path(tmp) / "project"
+            _copier_copy(with_pack, {"pack": "ts-playwright", "test_types": "[e2e, api]"})
+            found = [f"core: {reference}" for reference in _bare_references(self.project)]
+            found += [f"pack: {reference}" for reference in _bare_references(with_pack)]
+        self.assertEqual(found, [], "bare references to this repository; write the full URL")
 
     def test_settings_register_the_mission_marketplace(self) -> None:
         # The marketplace in extraKnownMarketplaces with auto-update off, and
