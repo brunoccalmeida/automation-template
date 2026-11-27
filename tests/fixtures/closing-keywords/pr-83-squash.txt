@@ -1,0 +1,96 @@
+fix(ci): move the pinned CI tools out of .github/ so Dependabot can open their pull requests (#83)
+
+Refs #82
+
+`Refs`, not `Closes`: #82 is done when a Dependabot run opens the CLI's
+pull request from the new path, which can only happen after this merge
+(Dependabot reads `dependabot.yml` from the default branch only, ADR
+0016). Close #82 by hand once that run is seen.
+
+## Decisions
+
+- **Root cause:** #75's first Dependabot run computed the CLI bump
+(2.1.326 → 2.1.329 in `/.github/tools/claude-cli`) and GitHub refused to
+open the pull request: `400 "The request contains invalid or
+unauthorized changes"`, logged as `dependency_file_not_supported` (run
+45928407814). A local reproduction of the bump changes only
+`package.json` and `package-lock.json` inside the configured directory,
+so the refusal is not about the diff's content. Reported as intended
+GitHub behavior for ecosystems other than `github-actions` under
+`.github/`.
+- **The pinned CI tools move to `tools/`** (`tools/claude-cli`,
+`tools/copier`), with the Dependabot entries, CI, the `check` and `test`
+contracts, the tests, the session summary and ADR 0007's link updated.
+Copier too: its `uv` entry ran green only because there was nothing to
+bump. `tools/` stays out of the generated project (`_subdirectory:
+template`), checked by `test_template_files_stay_out_of_the_project`.
+- **A test enforces the rule:** `tests/test_ci_tools.py` fails for an
+entry outside `github-actions` whose directory is under `/.github`, and
+fails when an entry cannot be parsed (for example `directories:`), so it
+never skips one without saying so.
+- **ADR 0017** supersedes in part ADR 0016 (the directories) and the
+location in ADR 0007; their status lines point at it.
+- Dismissed: waiting for GitHub to relax the check (Support calls it
+intended), moving only the CLI (Copier hits the same refusal on its
+first bump), going back to bumping by hand (what ADR 0016 replaced).
+
+## Sources
+
+- dependabot-core `updater/lib/dependabot/api_client.rb`: that exact
+server message is mapped to `DependencyFileNotSupported`, and the check
+runs on GitHub's side
+(https://github.com/dependabot/dependabot-core/blob/main/updater/lib/dependabot/api_client.rb).
+- dependabot-core#15721: same 400 for npm under
+`/.github/semantic-release`; GitHub Support's answer is relayed by a
+commenter (secondhand): intended, only a few ecosystems (mainly
+`github-actions`) are accepted under `.github/`; moving the manifest out
+fixed it (https://github.com/dependabot/dependabot-core/issues/15721).
+- dependabot-core#15237: same error for other ecosystems under
+`/.github/actions/`
+(https://github.com/dependabot/dependabot-core/issues/15237).
+- GitHub's Dependabot errors page does not document the rule
+(https://docs.github.com/en/code-security/reference/supply-chain-security/troubleshoot-dependabot/dependabot-errors).
+- Judgment: the rule is not official documentation. One commenter in
+#15721 says their `.github/` setup started working again. That is why
+#82 stays open until the run is seen.
+
+## How the RED was seen
+
+- `python -m unittest tests.test_ci_tools -v` with the entries still on
+`/.github/tools/...`: `AssertionError: True is not false : the npm entry
+points at /.github/tools/claude-cli: GitHub refuses Dependabot's pull
+request for files under .github/ outside github-actions (#82)`, and the
+same for `uv` at `/.github/tools/copier`. Green after the move.
+- Entry count (reviewer finding): mutation, with an npm entry with
+`directories: ["/.github/x"]` appended to `dependabot.yml`:
+`AssertionError: 3 != 4 : an entry of .github/dependabot.yml was not
+parsed`; restored, green.
+- Gates on the final state: `check` OK; `python -m unittest discover -s
+tests`: 64 tests OK (1 skipped on Windows, unrelated); `tests/packs`: 25
+OK.
+
+## Reviewer findings
+
+- **Fixed:**
+- `Closes #82` would close the issue before its "Done when" (the
+Dependabot run) happens: this PR uses `Refs #82`. The commit messages
+keep `Closes #82`, but the squash writes only this body to `main`
+(`squash_merge_commit_message` is `PR_BODY`).
+- The session summary's Pitfalls still gave the old Windows path
+`.github\tools\claude-cli\node_modules\.bin\claude.cmd`: now
+`tools\...`.
+- ADR 0007's link to `../../.github/tools/copier/` led nowhere:
+repointed to `../../tools/copier/`, with a note naming ADR 0017.
+- The new test's regex could skip an entry it did not parse
+(`directories:`, reordered or unquoted `directory:`): it now asserts
+that the parsed count equals the declared entries.
+- **False positives:** none
+- **False negatives:** none (the defect from #75 depends on an
+undocumented GitHub server rule that neither the reviewer's list nor
+`REVIEW.md` covers).
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+---------
+
+Co-authored-by: Claude Opus 5.5 <noreply@anthropic.com>
