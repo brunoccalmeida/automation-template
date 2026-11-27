@@ -3,9 +3,9 @@
   "private": true,
   "description": "Pins the Claude Code CLI that CI uses to validate the plugin marketplace.",
   "dependencies": {
-    "@anthropic-ai/claude-code": "2.1.326"
+    "@anthropic-ai/claude-code": "2.1.329"
   },
   "allowScripts": {
-    "@anthropic-ai/claude-code@2.1.326": true
+    "@anthropic-ai/claude-code@2.1.329": true
   }
 }
