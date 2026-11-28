@@ -2,7 +2,9 @@
 # core's github-actions block; a pack or the project adds its own ecosystems
 # here, because Dependabot reads this one file
 # (https://github.com/brunoccalmeida/automation-template/blob/main/docs/adr/0012-github-files-rendered-by-the-core.md).
-# Security updates are enabled in the repository settings and ignore the cooldown.
+# Security updates are enabled by .github/scripts/apply-github-settings.sh
+# (/new-project) and ignore the cooldown, which applies to version updates only
+# (Dependabot options reference, cooldown).
 #
 # Cooldown: a compromised or broken release is usually taken down within
 # days, so version updates wait 7 days; zizmor's dependabot-cooldown audit
