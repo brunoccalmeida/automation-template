@@ -39,11 +39,13 @@ def _documents() -> list[Path]:
 
 
 def _rule_paths(rule: Path) -> list[str]:
-    """The `paths:` list of a rule's frontmatter, written as a YAML list of quoted strings."""
+    """The patterns of a rule's `paths:`: a YAML list, quoted or not, or a comma-separated string."""
     frontmatter = FRONTMATTER.match(rule.read_text(encoding="utf-8"))
     if not frontmatter:
         return []
-    return re.findall(r'(?m)^\s+- "([^"]+)"$', frontmatter.group(1))
+    inline = re.search(r"(?m)^paths:[ \t]*(\S.*)$", frontmatter.group(1))
+    items = inline.group(1).strip("\"'").split(",") if inline else re.findall(r"(?m)^\s+-\s+(.+)$", frontmatter.group(1))
+    return [item.strip().strip("\"'") for item in items]
 
 
 def _glob_regex(pattern: str) -> re.Pattern[str]:
