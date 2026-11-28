@@ -1,8 +1,9 @@
 """Tests for .github/scripts/apply-github-settings.sh, which /new-project runs (#74).
 
 The script applies through the GitHub API what the template's files cannot:
-the labels the mission cycle uses, the merge settings, and the ruleset in
-.github/rulesets/protect-main.json. This repository and every generated
+the labels the mission cycle uses, the merge settings, Dependabot alerts and
+security updates (#98), and the ruleset in .github/rulesets/protect-main.json.
+This repository and every generated
 project share it (held identical by tests/test_template.py), so the tests run
 this repository's copy, from a temporary project root that holds only the
 ruleset, with a fake ``gh`` first on the PATH that records every call.
@@ -62,6 +63,12 @@ case "$*" in
 esac
 case "$1 $2" in
 "api repos/{owner}/{repo}/rulesets"*) [ -n "$FAKE_RULESET_IDS" ] && printf '%s\n' "$FAKE_RULESET_IDS" ;;
+"api repos/{owner}/{repo}/vulnerability-alerts")
+  if [ "$FAKE_ALERTS" = off ]; then
+    echo "HTTP 404: Not Found" >&2
+    exit 1
+  fi ;;
+"api repos/{owner}/{repo}/automated-security-fixes") printf '%s\n' "$FAKE_SECURITY_UPDATES" ;;
 esac
 exit 0
 """
@@ -87,13 +94,19 @@ class ApplyGithubSettingsTest(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def _run(self, ruleset_ids: str = "", fail_on: str = "") -> subprocess.CompletedProcess:
+    def _run(
+        self, ruleset_ids: str = "", fail_on: str = "", alerts: str = "on", security_updates: str = "true"
+    ) -> subprocess.CompletedProcess:
         env = {
             **os.environ,
             "PATH": f"{self.bin}{os.pathsep}{os.environ['PATH']}",
             "FAKE_GH_LOG": str(self.log),
             "FAKE_RULESET_IDS": ruleset_ids,
             "FAKE_GH_FAIL_ON": fail_on,
+            # What the read-back sees: GET vulnerability-alerts exits 1
+            # (HTTP 404) when off; the --jq .enabled of automated-security-fixes
+            "FAKE_ALERTS": alerts,
+            "FAKE_SECURITY_UPDATES": security_updates,
         }
         return subprocess.run([SH, str(SCRIPT)], cwd=self.project, env=env, capture_output=True, text=True, timeout=TIMEOUT_SECONDS)
 
@@ -103,7 +116,11 @@ class ApplyGithubSettingsTest(unittest.TestCase):
         return [line.split("\x1f")[:-1] for line in self.log.read_text(encoding="utf-8").splitlines()]
 
     def _ruleset_writes(self) -> list[list[str]]:
-        return [call for call in self._calls() if call[:3] in (["api", "-X", "POST"], ["api", "-X", "PUT"])]
+        return [
+            call
+            for call in self._calls()
+            if call[:3] in (["api", "-X", "POST"], ["api", "-X", "PUT"]) and call[3].startswith("repos/{owner}/{repo}/rulesets")
+        ]
 
     @staticmethod
     def _option(call: list[str], flag: str) -> str:
@@ -126,6 +143,40 @@ class ApplyGithubSettingsTest(unittest.TestCase):
         self.assertEqual(len(patches), 1, f"expected one PATCH of the repository: {self._calls()}")
         fields = dict(value.split("=", 1) for flag, value in zip(patches[0], patches[0][1:]) if flag in ("-F", "-f"))
         self.assertEqual(fields, MERGE_SETTINGS)
+
+    def test_enables_dependabot_alerts_then_security_updates(self) -> None:
+        # Security updates need alerts on, so alerts come first
+        result = self._run()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        puts = [call[3] for call in self._calls() if call[:3] == ["api", "-X", "PUT"]]
+        self.assertEqual(
+            puts,
+            ["repos/{owner}/{repo}/vulnerability-alerts", "repos/{owner}/{repo}/automated-security-fixes"],
+            f"expected alerts, then security updates: {self._calls()}",
+        )
+
+    def test_reads_back_both_dependabot_settings_after_enabling_them(self) -> None:
+        self._run()
+        calls = self._calls()
+        enable_updates = calls.index(["api", "-X", "PUT", "repos/{owner}/{repo}/automated-security-fixes", "--silent"])
+        reads = [call for call in calls[enable_updates + 1 :] if call[:1] == ["api"] and call[1] in (
+            "repos/{owner}/{repo}/vulnerability-alerts", "repos/{owner}/{repo}/automated-security-fixes")]
+        self.assertEqual([call[1] for call in reads], [
+            "repos/{owner}/{repo}/vulnerability-alerts", "repos/{owner}/{repo}/automated-security-fixes"],
+            f"expected both read back after enabling: {calls}")
+        self.assertEqual(self._option(reads[1], "--jq"), ".enabled")
+
+    def test_fails_when_dependabot_alerts_read_back_off(self) -> None:
+        result = self._run(alerts="off")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Dependabot alerts", result.stderr)
+        self.assertIn("HTTP 404", result.stderr)
+
+    def test_fails_when_security_updates_read_back_off(self) -> None:
+        result = self._run(security_updates="false")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Dependabot security updates", result.stderr)
+        self.assertIn("false", result.stderr)
 
     def test_creates_the_ruleset_when_none_has_its_name(self) -> None:
         result = self._run()

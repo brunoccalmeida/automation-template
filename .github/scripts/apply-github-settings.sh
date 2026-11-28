@@ -1,7 +1,8 @@
 #!/bin/sh
 # Applies to the project's GitHub repository what files cannot
 # (https://github.com/brunoccalmeida/automation-template/issues/74): the
-# labels the mission cycle uses, the merge settings, and the ruleset in
+# labels the mission cycle uses, the merge settings, Dependabot alerts and
+# security updates, and the ruleset in
 # .github/rulesets/protect-main.json. Run it from the project's root; gh fills
 # {owner}/{repo} from the clone's remote or GH_REPO (gh api manual). It is
 # safe to run again: labels are created or updated (--force), and the ruleset
@@ -48,6 +49,20 @@ step "merge settings" gh api -X PATCH 'repos/{owner}/{repo}' --silent \
   -F allow_auto_merge=true -F delete_branch_on_merge=true \
   -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=PR_BODY
 
+# Dependabot security updates are available only where Dependabot alerts are
+# on, so alerts come first
+# (https://github.com/brunoccalmeida/automation-template/issues/98). Both PUTs
+# document only 204, so each setting is read back: GET vulnerability-alerts is
+# 404 when off; GET automated-security-fixes is documented as 404 when off,
+# but was seen answering 200 with "enabled": false, so its value is checked too
+step "Dependabot alerts" gh api -X PUT 'repos/{owner}/{repo}/vulnerability-alerts' --silent
+step "Dependabot security updates" gh api -X PUT 'repos/{owner}/{repo}/automated-security-fixes' --silent
+gh api 'repos/{owner}/{repo}/vulnerability-alerts' --silent ||
+  fail "Dependabot alerts are still off after enabling them"
+updates=$(gh api 'repos/{owner}/{repo}/automated-security-fixes' --jq .enabled) ||
+  fail "could not read back Dependabot security updates"
+[ "$updates" = true ] || fail "Dependabot security updates are still off after enabling them (enabled: $updates)"
+
 # includes_parents=false: an organization ruleset with the same name is not
 # this repository's to replace
 ids=$(gh api 'repos/{owner}/{repo}/rulesets?includes_parents=false' --paginate \
@@ -58,4 +73,4 @@ case "$ids" in
 *) step "ruleset \"$name\"" gh api -X PUT "repos/{owner}/{repo}/rulesets/$ids" --input "$RULESET" --silent ;;
 esac
 
-echo "Applied the labels, the merge settings and the ruleset \"$name\"."
+echo "Applied the labels, the merge settings, Dependabot alerts and security updates, and the ruleset \"$name\"."
