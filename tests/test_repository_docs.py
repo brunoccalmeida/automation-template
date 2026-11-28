@@ -2,8 +2,10 @@
 
 Each test guards an author error the reviewer caught in a merged mission:
 a relative link left pointing at a moved path (#83) and a table row split
-by a stray line break (#73). template/ is left out: its links resolve only
-after rendering, and test_template.py checks them in the generated project.
+by a stray line break (#73), or a path-scoped rule whose patterns no longer
+match a file, so it never loads (#100). template/ is left out: its links
+resolve only after rendering, and test_template.py checks them in the
+generated project.
 """
 
 import re
@@ -20,13 +22,47 @@ ROOT = Path(__file__).resolve().parent.parent
 PIPE = re.compile(r"(?<!\\)\|")
 DELIMITER_ROW = re.compile(r"\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*")
 FENCE = re.compile(r"\s*(```|~~~)")
+RULES = ROOT / ".claude" / "rules"
+FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
+# Patterns a template-owned rule lists for files only some projects have
+OPTIONAL_PATTERNS = {"AGENTS.md"}
+
+
+def _tracked(*patterns: str) -> list[str]:
+    return subprocess.run(
+        ["git", "ls-files", *patterns], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.split()
 
 
 def _documents() -> list[Path]:
-    listed = subprocess.run(
-        ["git", "ls-files", "*.md"], cwd=ROOT, capture_output=True, text=True, check=True
-    ).stdout.split()
-    return [ROOT / name for name in listed if not name.startswith("template/")]
+    return [ROOT / name for name in _tracked("*.md") if not name.startswith("template/")]
+
+
+def _rule_paths(rule: Path) -> list[str]:
+    """The patterns of a rule's `paths:`: a YAML list, quoted or not, or a comma-separated string."""
+    frontmatter = FRONTMATTER.match(rule.read_text(encoding="utf-8"))
+    if not frontmatter:
+        return []
+    inline = re.search(r"(?m)^paths:[ \t]*(\S.*)$", frontmatter.group(1))
+    items = inline.group(1).strip("\"'").split(",") if inline else re.findall(r"(?m)^\s+-\s+(.+)$", frontmatter.group(1))
+    return [item.strip().strip("\"'") for item in items]
+
+
+def _glob_regex(pattern: str) -> re.Pattern[str]:
+    """A `paths:` pattern as a regex over repository-relative paths.
+
+    Follows the forms the memory docs list (Path-specific rules): `**` spans
+    folders, `*` stays inside one, a leading `/` anchors to the root, and a
+    pattern with no `/` matches at any depth. Brace expansion is not handled.
+    """
+    anchored = pattern.startswith("/")
+    pattern = pattern.lstrip("/")
+    parts = re.split(r"(\*\*/|\*\*|\*|\?)", pattern)
+    tokens = {"**/": "(?:.*/)?", "**": ".*", "*": "[^/]*", "?": "[^/]"}
+    body = "".join(tokens.get(part, re.escape(part)) for part in parts)
+    if "/" not in pattern and not anchored:
+        body = "(?:.*/)?" + body
+    return re.compile(body)
 
 
 def _broken_links(document: Path) -> list[str]:
@@ -82,6 +118,19 @@ class RepositoryDocsTest(unittest.TestCase):
             for row in _malformed_table_rows(document.read_text(encoding="utf-8"))
         ]
         self.assertEqual(malformed, [], "table rows that render wrong (split row or wrong cell count)")
+
+    def test_path_scoped_rules_match_a_file(self) -> None:
+        # A rule loads only when Claude reads, writes or edits a file its
+        # `paths:` matches (memory docs, Path-specific rules); a pattern that
+        # matches nothing turns the rule off without a warning
+        files = _tracked()
+        unmatched = [
+            f"{rule.name}: {pattern}"
+            for rule in sorted(RULES.glob("*.md"))
+            for pattern in _rule_paths(rule)
+            if pattern not in OPTIONAL_PATTERNS and not any(_glob_regex(pattern).fullmatch(name) for name in files)
+        ]
+        self.assertEqual(unmatched, [], "path-scoped rule patterns that match no tracked file")
 
 
 if __name__ == "__main__":

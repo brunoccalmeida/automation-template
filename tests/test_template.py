@@ -317,8 +317,8 @@ class GeneratedProjectTest(unittest.TestCase):
             values = _contract_values(project / "CLAUDE.md")
             workflow = (project / CI_WORKFLOW).read_text(encoding="utf-8")
             ruleset = json.loads((project / RULESET).read_text(encoding="utf-8"))
-        # This repository's ruleset describes the active one (CLAUDE.md,
-        # "Ruleset as code") and uses the defaults: one ruleset, not two
+        # This repository's ruleset describes the active one (rule
+        # .claude/rules/github-settings.md) and uses the defaults: one ruleset, not two
         self.assertEqual(ruleset, json.loads((TEMPLATE_ROOT / RULESET).read_text(encoding="utf-8")), "the template's ruleset differs from this repository's")
         for role, expected in CONTRACT_DEFAULTS.items():
             with self.subTest(role=role):
