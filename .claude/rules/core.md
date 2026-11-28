@@ -85,8 +85,6 @@ intermediate state. Ask: "does this see the result, or a state that is still cha
 
 - CI checks: right after a push, green checks still belong to the previous commit; query
   by the current head SHA. A missing check is pending.
-- `mergeStateStatus` is `UNKNOWN` right after a merge into the `main-branch`: wait until it
-  leaves `UNKNOWN`.
 - "Not known yet" is not "yes": pending, `UNKNOWN` or an empty answer mean wait.
 - Wait on a condition, never on a fixed time; when polling, the interval only sets the
   pace, the condition ends the loop.
