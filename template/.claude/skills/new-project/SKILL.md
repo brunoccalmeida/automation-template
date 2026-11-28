@@ -1,6 +1,6 @@
 ---
 name: new-project
-description: Applies to the project's GitHub repository what the template's files cannot, the labels, the merge settings and the ruleset in .github/rulesets/protect-main.json, and reads them back. Run once after the generated project is first pushed, and again whenever the ruleset file changes. Only the user triggers it, because it changes the repository's settings on GitHub.
+description: Applies to the project's GitHub repository what the template's files cannot, the labels, the merge settings, Dependabot alerts and security updates, and the ruleset in .github/rulesets/protect-main.json, and reads them back. Run once after the generated project is first pushed, and again whenever the ruleset file changes. Only the user triggers it, because it changes the repository's settings on GitHub.
 disable-model-invocation: true
 ---
 
@@ -16,6 +16,7 @@ The template renders `.github/rulesets/protect-main.json`, but a file in the rep
 3. **Read back.** Each read must show the value, not only a success code:
    - `gh label list --json name --jq '.[].name'`: `priority: P0`, `priority: P1`, `priority: P2`, `blocked` and `reviewer-miss` among them;
    - `gh api 'repos/{owner}/{repo}' --jq '{allow_squash_merge,allow_merge_commit,allow_rebase_merge,allow_auto_merge,delete_branch_on_merge,squash_merge_commit_title,squash_merge_commit_message}'`: squash only, auto-merge on, `PR_TITLE` and `PR_BODY`;
+   - `gh api 'repos/{owner}/{repo}/automated-security-fixes' --jq .enabled`: `true` (Dependabot security updates, which need Dependabot alerts on);
    - `gh api 'repos/{owner}/{repo}/rules/branches/<main-branch>' --jq '.[] | .type + " " + (.parameters.required_status_checks // "" | tostring)'`: the rules active on the `main-branch`, `pull_request` among them and `required_status_checks` with the `gate` as its `context` and `integration_id` 15368 (the GitHub Actions app, `gh api apps/github-actions --jq .id`).
 4. **Report** each value read back. The gate is required from now on, so the next pull request merges only with the `gate` green.
 
