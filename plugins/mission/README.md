@@ -231,6 +231,16 @@ Manual updates drift: after one merge, 4 of the 5 projects using the plugin were
 - **It fails open.** Offline, no `git`, no `repository` in the manifest, or a plugin loaded in place with `--plugin-dir` (its directory is not named after a commit): nothing is shown, and the reason goes to stderr, readable with debug logging ([Exit code 0](https://code.claude.com/docs/en/hooks.md#exit-code-0)).
 - **It costs at most 10 seconds, usually under one.** "Claude's first response still waits for the hooks to finish" ([Hooks reference, SessionStart](https://code.claude.com/docs/en/hooks.md#sessionstart)), so the hook's `timeout` is 10 seconds. Measured on Windows: `git ls-remote` to GitHub took 0.5 to 0.75 s, and a host that does not resolve failed in about 5 s. Only a connection that hangs without answering reaches the timeout.
 
+### Try a change before it is published
+
+A session in this repository runs the installed plugin, the published version, so a branch that changes the plugin closes its own mission with the version before the change. To run the branch's version, start the session from the repository root with:
+
+```sh
+claude --plugin-dir ./plugins/mission
+```
+
+The plugin loaded this way overrides the installed one of the same name for that session only ([Plugin loading reference](https://code.claude.com/docs/en/plugins/loading.md#name-conflicts)). The flag takes effect at startup, so decide before the session starts; a session already open keeps the installed version.
+
 ## Track the adoption from this repository
 
 A mission that adopts or changes the plugin in a project is often tracked by an issue in this repository. The project's pull request closes that issue only if its description says `Closes brunoccalmeida/automation-template#N`: a bare `#N` points to the project's own repository ([Linking a pull request to an issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword), "Issue in a different repository"). The keyword takes effect only when the pull request merges into the default branch.

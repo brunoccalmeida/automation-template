@@ -25,19 +25,9 @@ Documentation language: English
 
 ## Template architecture rules
 
-This repository is a [Copier](https://copier.readthedocs.io/) template for test automation projects: a **core** that every project inherits and one **pack** per tool (`ts-playwright`, `python-behave-selenium`). The decisions are in `docs/adr/`; the evidence for what goes in, in `docs/INVENTORY.md`.
-
 - **The core names no stack** (tool, language, target type): it defines contracts that each pack implements through Copier variables ([ADR 0003](docs/adr/0003-stack-agnostic-core-defines-contracts.md)).
 - **One pack per tool, not per test type**; the test type is an option inside the pack ([ADR 0002](docs/adr/0002-core-plus-packs-split-by-tool.md)).
 - **Walking skeleton, no domain abstraction:** infrastructure, conventions as documented folders, and one smoke; no `BasePage`, page objects, API clients or authentication.
-- **Evidence first:** what is not proven in the source projects stays out (rule of three).
+- **Evidence first:** what is not proven in the source projects ([`docs/INVENTORY.md`](docs/INVENTORY.md)) stays out (rule of three).
 - **Keep what belongs to the template apart from what belongs to the generated project:** the project adds its own files instead of editing the template's, so `copier update` does not conflict.
 - **The template is tested by generating a project:** it does not run on its own; the test generates a project and validates the result.
-
-## Ruleset as code
-
-[`.github/rulesets/protect-main.json`](.github/rulesets/protect-main.json) describes the active ruleset (id 27584439), but editing the file does not change GitHub. Changed the file: apply it with `sh .github/scripts/apply-github-settings.sh` (the script `/new-project` runs in a generated project; it also reapplies the labels, the merge settings and Dependabot alerts and security updates) and check with `gh api repos/{owner}/{repo}/rulesets/27584439`; changed it in the web interface: bring the change into the file.
-
-## Changes to the plugin itself
-
-The mission is closed by the published version (installed from GitHub, `autoUpdate: false`), not by the branch's. To try the branch's version, start a session with `claude --plugin-dir ./plugins/mission`, which overrides the installed one for that session only ([Plugin loading reference](https://code.claude.com/docs/en/plugins/loading.md#name-conflicts)). After the merge, `claude plugin update mission@brunoccalmeida-plugins`.
